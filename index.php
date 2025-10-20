@@ -30,7 +30,7 @@
     <body>
         <main>
             <div class="container mt-5">
-            <h1>Pagina di login</h1>
+            <h1>Pagina di login, benvenuto!!!</h1>
             
                 <?php
                     if(isset($_GET["errore"])){

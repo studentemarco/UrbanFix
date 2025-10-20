@@ -4,35 +4,5 @@
         "password": "a50c9291f7f2af9e45fc71022da60a51840e20026e7fb82865ea0240732959bacf115b0c6c97713b2572b6fe7c028f34",
         "bgcolor": "#6600ff",
         "role": "utente"
-    },
-    {
-        "username": "admin",
-        "password": "f670cd34b8132937b33aee03f9d2b457411acb296580b09ca092755bb596867d3c1d5a9ab739eb676a4a3bad0685390f",
-        "bgcolor": "#c8befe",
-        "role": "admin"
-    },
-    {
-        "username": "aaa",
-        "password": "7be1ee8a224c4d14633d82ef4c6fec7338127da50175e35b2469898816ab22f94aa886ee752fe70ea455609e131b5aab",
-        "bgcolor": "#563d7c",
-        "role": "utente"
-    },
-    {
-        "username": "123",
-        "password": "f8821cb32a27aaf6a8f12cff12c6dfe9fb9b852c2778d9f4625250a077a3f370b9e6464f4b596639b6b38ce3feec1924",
-        "bgcolor": "#563d7c",
-        "role": "utente"
-    },
-    {
-        "username": "1234",
-        "password": "61a4b6ffd3f70751a6aea49039d53506072de37f99f3f43c0fd94b41359cabe7e5d949b979376a4e9337bb3dfd246bb0",
-        "bgcolor": "#ffd84d",
-        "role": "utente"
-    },
-    {
-        "username": "utente_phpmyadmin",
-        "password": "a74f1997c3435e0a53d723cbce695ea58ec30ee9b2313872f1ee292139bd294e96326c70078d00e65d0f6e0b5cda976c",
-        "bgcolor": "#000000",
-        "role": "utente"
     }
 ]
