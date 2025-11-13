@@ -1,8 +1,1 @@
-[
-    {
-        "username": "marco",
-        "password": "a50c9291f7f2af9e45fc71022da60a51840e20026e7fb82865ea0240732959bacf115b0c6c97713b2572b6fe7c028f34",
-        "bgcolor": "#6600ff",
-        "role": "utente"
-    }
-]
+[{"username":"marco","password":"a50c9291f7f2af9e45fc71022da60a51840e20026e7fb82865ea0240732959bacf115b0c6c97713b2572b6fe7c028f34","bgcolor":"#6600ff","role":"utente"},{"username":"utente_phpmyadmin","password":"aee08f3c5490fd37877148862e3fc27802111018e72d1ec0e42d954b9ae52e21e48081631618a4dd442f8a77da3181e0","bgcolor":"#ff0000","role":"utente"}]
