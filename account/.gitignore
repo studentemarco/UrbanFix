@@ -1,0 +1,50 @@
+# File sensibili - ignora ambienti, chiavi e credenziali
+.env
+.env.*
+.env.local
+.env.*.local
+.envrc
+*.env
+
+# Chiavi e certificati
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+id_rsa
+id_rsa.pub
+.ssh/
+
+# Credenziali / config sensibili
+credentials.yml
+secrets.yml
+config/secrets.yml
+credentials.json
+
+# Log, DB e file temporanei
+*.log
+npm-debug.log*
+yarn-error.log
+*.sqlite3
+*.db
+tmp/
+logs/
+coverage/
+
+# Dipendenze e build
+node_modules/
+dist/
+build/
+
+# IDE / OS
+.vscode/
+.idea/
+*.swo
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# altro personalizzato
+*.json
