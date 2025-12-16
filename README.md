@@ -5,6 +5,10 @@ UrbanFix è una piattaforma web interattiva che permette ai cittadini di miglior
 I dipendenti comunali e gli amministratori possono gestire le segnalazioni, le tipologie e il territorio di competenza.
 
 ---
+## Pagina WEB con diagrammi: ER, casi d'uso, classi
+https://zupolinomarco5ie.altervista.org/urbanfix.php
+
+---
 
 ## Funzionalità principali
 
