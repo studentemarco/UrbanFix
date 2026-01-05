@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <title>Title</title>
+        <!-- Required meta tags -->
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, shrink-to-fit=no"
+        />
+
+        <!-- Bootstrap CSS v5.2.1 -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+            integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+            crossorigin="anonymous"
+        />
+    </head>
+
+    <body>
+        <header>
+            <!-- place navbar here -->
+        </header>
+        <main>
+            <h1 class="text-center">Rest API</h1>
+            <div class="container" style="display: flex; flex-wrap: wrap; justify-content: center;">
+
+                <template id="user-template">
+                    <div class="card text-start col-3" style="margin: 10px; min-width: 270px;">
+                        <div class="card-body">
+                            <h4 class="card-nome">Nome</h4>
+                            <p class="card-eta">Eta</p>
+                            <button class="btn btn-primary">More info</button>
+                            <button class="btn btn-warning">Edit</button>
+                            <button class="btn btn-danger">Delete</button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+            <div style="height: 20px;"></div>
+            <div>
+                <div id="user-form" style="max-width: 400px; margin: auto;">
+                    <h3>Add New User</h3>
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="name" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="age" class="form-label">Age</label>
+                        <input type="number" class="form-control" id="age" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Role</label>
+                        <input type="text" class="form-control" id="role" />
+                    </div>
+                    <!-- inserimento di data come chiave valore, possibilità di aggiungere righe di inserimento in automatico -->
+                    <div class="mb-3" id="data-pairs-wrapper">
+                        <small class="form-text text-muted">Chiave e valore affiancati. Quando entrambi vengono compilati si aggiunge automaticamente una nuova riga.</small>
+                    </div>
+                    <script>
+                        function makePair(key = '', value = '') {
+                            const wrapper = document.getElementById('data-pairs-wrapper');
+                            const row = document.createElement('div');
+                            row.className = 'row gx-2 align-items-end mb-2 data-pair';
+                            row.innerHTML = `
+                                <div class="col">
+                                    <label class="form-label">Data Key</label>
+                                    <input type="text" class="form-control data-key" name="data-keys[]" />
+                                </div>
+                                <div class="col">
+                                    <label class="form-label">Data Value</label>
+                                    <input type="text" class="form-control data-value" name="data-values[]" />
+                                </div>
+                            `;
+                            const keyInput = row.querySelector('.data-key');
+                            const valInput = row.querySelector('.data-value');
+                            keyInput.value = key;
+                            valInput.value = value;
+
+                            function checkAndMaybeAdd() {
+                                // se questa è l'ultima riga e entrambi i campi sono pieni, aggiungi una nuova riga vuota
+                                const last = wrapper.querySelector('.data-pair:last-child');
+                                if (last === row && keyInput.value.trim() !== '' && valInput.value.trim() !== '') {
+                                    makePair();
+                                }
+                            }
+
+                            keyInput.addEventListener('input', checkAndMaybeAdd);
+                            valInput.addEventListener('input', checkAndMaybeAdd);
+
+                            wrapper.appendChild(row);
+                            return row;
+                        }
+                        (function(){
+                            // crea una riga key/value e la aggiunge al wrapper
+
+                            document.addEventListener('DOMContentLoaded', () => {
+                                const wrapper = document.getElementById('data-pairs-wrapper');
+
+                                // Se nel markup esistono già gli input con id data-key / data-value (markup precedente),
+                                // usa i loro valori per creare la prima coppia e rimuovi i vecchi container.
+                                const existingKey = document.getElementById('data-key');
+                                const existingVal = document.getElementById('data-value');
+
+                                if (existingKey && existingVal) {
+                                    const parentKeyDiv = existingKey.closest('.mb-3');
+                                    const parentValDiv = existingVal.closest('.mb-3');
+
+                                    makePair(existingKey.value || '', existingVal.value || '');
+
+                                    if (parentKeyDiv) parentKeyDiv.remove();
+                                    if (parentValDiv) parentValDiv.remove();
+                                } else {
+                                    // caso normale: crea la prima riga vuota
+                                    makePair();
+                                }
+                            });
+                        })();
+                    </script>
+                    
+                    <button id="add-user-btn" class="btn btn-success">Add User</button>
+                    <div style="height: 30px;"></div>
+                </div>
+            </div>
+
+                
+
+            <script src="banner.js"></script>
+            <script>
+                document.getElementById('add-user-btn').addEventListener('click', () => {
+                    const name = document.getElementById('name').value;
+                    const age = parseInt(document.getElementById('age').value, 10);
+                    const role = document.getElementById('role').value;
+
+                    if (!name || isNaN(age)) {
+                        bannerError('Name and Age are required');
+                        return;
+                    }
+
+                    // raccogli i dati key/value
+                    const dataKeys = Array.from(document.querySelectorAll('.data-key')).map(input => input.value.trim());
+                    const dataValues = Array.from(document.querySelectorAll('.data-value')).map(input => input.value.trim());
+                    const dataObj = {};
+                    for (let i = 0; i < dataKeys.length; i++) {
+                        if (dataKeys[i] !== '' && dataValues[i] !== '') {
+                            dataObj[dataKeys[i]] = dataValues[i];
+                        }
+                    }
+
+                    const newUser = { name, age, role, data: dataObj };
+
+                    fetch('/api/users', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer 5IDtoken'
+                        },
+                        body: JSON.stringify(newUser)
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            lastModified = new Date().toUTCString();
+                            bannerSuccess('User added successfully');
+                            //add the new user card to the UI without refreshing
+                            const template = document.getElementById('user-template');
+                            const clone = template.content.cloneNode(true);
+                            clone.querySelector('.card-nome').textContent = newUser.name;
+                            clone.querySelector('.card-eta').textContent = newUser.age;
+                            clone.querySelector('.btn-primary').addEventListener('click', () => {showUserDetails(newUser.name)});
+                            clone.querySelector('.btn-danger').addEventListener('click', () => {deleteUser(newUser)});
+                            clone.querySelector('.btn-warning').addEventListener('click', () => {editUser(newUser)});
+                            document.querySelector('.container').appendChild(clone);
+                            // Clear form fields
+                            document.getElementById('name').value = '';
+                            document.getElementById('age').value = '';
+                            document.getElementById('role').value = '';
+                            document.getElementById('data-pairs-wrapper').innerHTML = '';
+                            // add an empty data pair row
+                            makePair(key = '', value = '');
+
+                            
+                            //setTimeout(() => location.reload(), 1000);
+                        } else {
+                            bannerError('Failed to add user');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error adding user:', error);
+                    });
+                });
+
+                function showUserDetails(name) {
+                    fetch(`/api/users/${name}`)
+                        .then(r => r.json())
+                        .then(user => showModal(user))
+                        .catch(err => console.error("Error fetching user details:", err));
+                }
+
+                function deleteUser(e) {
+                    const myHeaders = new Headers();
+                    myHeaders.append("Authorization", "Bearer 5IDtoken");
+                    //myHeaders.append("Cookie", ".Tunnels.Relay.WebForwarding.Cookies=CfDJ8Cs4yarcs6pKkdu0hlKHsZu5KsxvcmueQ2KCq5p_xjfidkj3_ycUM2GFT6XFoiiB41DpozGktkgirSOVDA-GegjZf3uGDU5Xh-FlNmQT3-MC9BM40Awoy9M4OxFr_GV12pLYMUOJ-j_7lTFDJ3Wuy-uikERORl7e-PPt1wO2TnmufLCya4b9b0msYX22248GB9dSVey2edLMs_jlU-Ivzs4NUgyPHaFJ1Oea2P4QeFtP9cjdSuvXdXssdNGBtMZxyqy4AeDHuHinuIpjY83MddD2756nP9mIUIhHmo1AXFil_0ESeRbHE7A1VT_n8ruN2eAEtgaozP-nPuIztRL1WUkCQu2gbnl_ZqmvKNtrL4XT4KihWef2t1vp50PQh3DNmJLTmngrqUULHUrawLItXaB6ip15XDvPAZxRV3iBhoKxtiMsNqwDFJIT49jIRw0RbkEB8UPZaLCG2A7NidpLKBGjK7S-SZOLz-Gg1bjkNHNt_pEi2hIV8JvJ7DLFoCouTg8uLtQQUwiQTZAS2Mu5JeCLcxNuHYdSwT50MK8oUdsNugZnyekYiOrNtkQHAhZwPIQFuq2-BJeszjBL9z_jYqbZA-mhUS1NgJZuhDbBK3g1qp3Nj-Kp8ybM_9GTejIUAG-Rx740byE1DeAQNXnZzzzmCqFHj-PhGhfGrT1BklYYJe735_o53sXlJy_N-hTaSw3uRKgNlN1QnMdVh5TRAkWTWTWuI0Qe3hgng1sC3WjXS_wsX22rqNBWRswJ-LZQFN4olq00zOqt1XRPACPGF7Nze5AmdkRkcHgCdZ9eBnnhvYJtPIVwIOqC8ueVNL7Lhut54nyf1jtCA2eur6WyAW4YUYPkJTGYdqzY7rx3hn5NFwMZYJKquF8t5puuDidquIgQ0hahda80iVZLI7EIm18uDXdds_iZcKTjh6r4BLGt3Q2udZXKWfMI39Spl28CWoaFjYRtXGIKqrknzLeZ6Ih55mmW38JaxBurA6Wbw5nl");
+                    fetch(`/api/users/${e.name}`, {
+                        method: 'DELETE',
+                        headers: myHeaders
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            lastModified = new Date().toUTCString();
+                            bannerSuccess('User deleted successfully');
+                            // remove the card from the UI without refreshing
+                            const cards = Array.from(document.querySelectorAll('.card'));
+                            const cardToRemove = cards.find(c => c.querySelector('.card-nome')?.textContent === e.name);
+                            if (cardToRemove) cardToRemove.remove();
+                        } else {
+                            bannerError('Failed to delete user');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error deleting user:', error);
+                    });
+                }
+
+                function editUser(e) {
+                    // Implement edit user functionality here
+                    fetch(`/api/users/${e.name}`)
+                        .then(r => r.json())
+                        .then(user => showModalEdit(user))
+                        .catch(err => console.error("Error fetching user details:", err));
+                }
+
+                function showModal(user) {
+
+                    // Escape HTML
+                    const esc = str => String(str ?? "")
+                        .replace(/&/g, "&amp;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;");
+
+                    // Render nested structure
+                    function render(v) {
+                        if (v && typeof v === "object") {
+                            const rows = Object.entries(v)
+                                .map(([k, val]) => `
+                                    <tr>
+                                        <th style="width:30%">${esc(k)}</th>
+                                        <td>${render(val)}</td>
+                                    </tr>
+                                `).join("");
+
+                            return `<table class="table table-sm table-bordered mb-2"><tbody>${rows}</tbody></table>`;
+                        }
+                        return esc(v);
+                    }
+
+                    // Create modal if not exists
+                    let modalEl = document.getElementById("user-info-modal");
+                    if (!modalEl) {
+                        modalEl = document.createElement("div");
+                        modalEl.id = "user-info-modal";
+                        modalEl.className = "modal fade";
+                        modalEl.innerHTML = `
+                            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title"></h5>
+                                        <button class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body"></div>
+                                    <div class="modal-footer">
+                                        <button class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                                    </div>
+                                </div>
+                            </div>`;
+                        document.body.appendChild(modalEl);
+                    }
+
+                    modalEl.querySelector(".modal-title").textContent = user.name;
+                    modalEl.querySelector(".modal-body").innerHTML = `
+                        <strong>Name:</strong> ${esc(user.name)}<br>
+                        <strong>Age:</strong> ${esc(user.age)}<br>
+                        <strong>Role:</strong> ${esc(user.role)}<br>
+
+                        <h6 class="mt-3">Other Info</h6>
+                        ${render(user.data)}
+                    `;
+
+                    new bootstrap.Modal(modalEl).show();
+                }
+
+                function editDetails(dataObj = {}) {
+
+                    const container = document.getElementById("edit-data-pairs");
+
+                    // pulisci eventuali dati vecchi
+                    container.innerHTML = "";
+
+                    // funzione helper per aggiungere una coppia
+                    function makePair(k = "", v = "") {
+                        const row = document.createElement("div");
+                        row.className = "row gx-2 mb-2";
+
+                        row.innerHTML = `
+                            <div class="col">
+                                <input class="form-control key-input" placeholder="Key" value="${k}">
+                            </div>
+                            <div class="col">
+                                <input class="form-control value-input" placeholder="Value" value="${v}">
+                            </div>
+                        `;
+
+                        container.appendChild(row);
+
+                        // quando entrambi sono compilati → aggiungi un'altra riga
+                        row.querySelector(".key-input").addEventListener("input", tryAddRow);
+                        row.querySelector(".value-input").addEventListener("input", tryAddRow);
+                    }
+
+                    // se entrambi pieni, aggiungi nuova riga
+                    function tryAddRow() {
+                        const rows = container.querySelectorAll(".row");
+                        const last = rows[rows.length - 1];
+
+                        const key = last.querySelector(".key-input").value.trim();
+                        const val = last.querySelector(".value-input").value.trim();
+
+                        if (key !== "" && val !== "") {
+                            makePair();
+                        }
+                    }
+
+                    // riempi dati esistenti
+                    for (const [k, v] of Object.entries(dataObj)) {
+                        makePair(k, v);
+                    }
+
+                    // sempre almeno una riga vuota
+                    makePair();
+                }
+
+                function showModalEdit(user) {
+
+                    // Escape HTML
+                    const esc = str => String(str ?? "")
+                        .replace(/&/g, "&amp;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;");
+
+                    // Render nested structure
+                    function render(v) {
+                        if (v && typeof v === "object") {
+                            const rows = Object.entries(v)
+                                .map(([k, val]) => `
+                                    <tr>
+                                        <th style="width:30%">${esc(k)}</th>
+                                        <td>${render(val)}</td>
+                                    </tr>
+                                `).join("");
+
+                            return `<table class="table table-sm table-bordered mb-2"><tbody>${rows}</tbody></table>`;
+                        }
+                        return esc(v);
+                    }
+
+                    // Create modal if not exists
+                    let modalEl = document.getElementById("user-edit-modal");
+                    if (!modalEl) {
+                        modalEl = document.createElement("div");
+                        modalEl.id = "user-edit-modal";
+                        modalEl.className = "modal fade";
+                        modalEl.innerHTML = `
+                        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                            <div class="modal-content">
+
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Edit User</h5>
+                                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+
+                                <div class="modal-body">
+                                    <form id="edit-user-form">
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">Name</label>
+                                            <input id="edit-name" class="form-control" disabled>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Age</label>
+                                            <input id="edit-age" class="form-control" type="number">
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">Role</label>
+                                            <input id="edit-role" class="form-control">
+                                        </div>
+
+                                        <div id="edit-data-pairs"></div>
+
+                                        <button id="save-btn" class="btn btn-warning mt-2">Salva</button>
+                                    </form>
+                                </div>
+
+                            </div>
+                        </div>`;
+
+                        document.body.appendChild(modalEl);
+                    }
+
+                    // riempi i campi
+                    document.getElementById("edit-name").value = user.name;
+                    document.getElementById("edit-age").value = user.age;
+                    document.getElementById("edit-role").value = user.role;
+
+                    // Chiama qui la tua funzione
+                    editDetails(user.data);
+
+                    // modalEl.querySelector(".modal-title").textContent = user.name;
+                    // modalEl.querySelector(".modal-body").innerHTML = `
+                    //     <strong>Name:</strong> ${esc(user.name)}<br>
+                    //     <strong>Age:</strong> ${esc(user.age)}<br>
+                    //     <strong>Role:</strong> ${esc(user.role)}<br>
+
+                    //     <h6 class="mt-3">Other Info</h6>
+                    //     ${render(user.data)}
+                    // `;
+
+                    new bootstrap.Modal(modalEl).show();
+
+                    // gestione salvataggio
+                    document.getElementById("save-btn").onclick = function(event) {
+                        event.preventDefault();
+                        const updatedAge = parseInt(document.getElementById("edit-age").value, 10);
+                        const updatedRole = document.getElementById("edit-role").value;
+                        const dataRows = document.querySelectorAll("#edit-data-pairs .row");
+                        const updatedData = {};
+                        dataRows.forEach(row => {
+                            const key = row.querySelector(".key-input").value.trim();
+                            const val = row.querySelector(".value-input").value.trim();
+                            if (key !== "" && val !== "") {
+                                updatedData[key] = val;
+                            }
+                        });
+                        // Here you can add the code to send the updated data to the server using fetch or any other method
+                        const myHeaders = new Headers();
+                        myHeaders.append("Content-Type", "application/json");   
+                        myHeaders.append("Authorization", "Bearer 5IDtoken");
+                        fetch(`/api/users/${user.name}`, {
+                            method: 'PUT',
+                            headers: myHeaders,
+                            body: JSON.stringify({
+                                name: user.name,
+                                age: updatedAge,
+                                role: updatedRole,
+                                data: updatedData
+                            })
+                        })
+                        .then(response => {
+                            if (response.ok) {
+                                lastModified = new Date().toUTCString();
+                                bannerSuccess('User updated successfully');
+                                // Aggiorna la card nell'interfaccia utente senza ricaricare
+                                const cards = Array.from(document.querySelectorAll('.card'));
+                                const cardToUpdate = cards.find(c => c.querySelector('.card-nome')?.textContent === user.name);
+                                if (cardToUpdate) {
+                                    cardToUpdate.querySelector('.card-eta').textContent = updatedAge;
+                                }
+                                // Chiudi il modal
+                                const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                                modalInstance.hide();
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error updating user:', error);
+                        });
+                    };
+                }
+
+                var lastModified = new Date().toUTCString();
+
+                fetch('/api/users')
+                    .then((response) => response.json())
+                    .then((data) => {
+                        console.log(data);
+                        data.forEach(e => {
+                            lastModified = new Date().toUTCString();
+                            console.log(`User: ${e.name}, Age: ${e.age}`);
+                            const template = document.getElementById('user-template');
+                            const clone = template.content.cloneNode(true);
+                            clone.querySelector('.card-nome').textContent = e.name;
+                            clone.querySelector('.card-eta').textContent = e.age;
+                            clone.querySelector('.btn-primary').addEventListener('click', () => {showUserDetails(e.name)});
+                            clone.querySelector('.btn-danger').addEventListener('click', () => {deleteUser(e)});
+                            clone.querySelector('.btn-warning').addEventListener('click', () => {editUser(e)});
+
+                                
+                            document.querySelector('.container').appendChild(clone);
+                        });
+                    })
+                    .catch((error) => {
+                        console.error('Error fetching users:', error);
+                    });
+
+                function polling(){
+                    // Polling function to fetch data every 2 seconds with conditional get to reduce data transfer
+                    // We have to use last-modified header to achieve this
+                    const myHeaders = new Headers();
+                    myHeaders.append("if-modified-since", lastModified);
+                    fetch('/api/users', { method: 'GET', headers: myHeaders })
+                        .then((response) => {
+                            if (response.status === 200) {
+                                return response.json();
+                            } else if (response.status === 304) {
+                                console.log('No changes detected');
+                                return null;
+                            } else {
+                                throw new Error('Error fetching users');
+                            }
+                        })
+                        .then((data) => {
+                            if (data) {
+                                // Update the UI with the new data
+                                console.log('Data updated:', data);
+                                // For simplicity, we will just reload the page to reflect changes
+                                location.reload();
+                                lastModified = new Date().toUTCString();
+                            }
+                        })
+                        .catch((error) => {
+                            console.error('Polling error:', error);
+                        });
+                }
+
+                setInterval(polling, 2000); // Poll every 2 seconds
+
+
+                
+                
+            </script>
+
+        </main>
+        <footer>
+            <!-- place footer here -->
+        </footer>
+        <!-- Bootstrap JavaScript Libraries -->
+        <script
+            src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+            integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+            crossorigin="anonymous"
+        ></script>
+
+        <script
+            src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"
+            integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+"
+            crossorigin="anonymous"
+        ></script>
+    </body>
+</html>

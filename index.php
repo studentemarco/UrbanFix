@@ -31,11 +31,71 @@
                     <p class="lead">Progetto di monitoraggio e segnalazione problemi urbani</p>
                 </div>
 
+
+                <?php
+    function wikidata_from_coords($lat, $lon) {
+        // La query Overpass per ottenere il comune tramite OSM
+        $query = "
+        [out:json];
+        is_in($lat, $lon);
+        area._[boundary=administrative];
+        rel(pivot)->.c;
+        .c out tags;
+        ";
+
+        $url = "https://overpass-api.de/api/interpreter";
+        $data = array('data' => $query);
+
+        // Invia la richiesta POST all'API Overpass
+        $options = array(
+            'http' => array(
+                'method'  => 'POST',
+                'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+                'content' => http_build_query($data)
+            )
+        );
+
+        $context  = stream_context_create($options);
+        $response = file_get_contents($url, false, $context);
+
+        if ($response === FALSE) {
+            return 'Errore nella richiesta API';
+        }
+
+        // Decodifica la risposta JSON
+        $json = json_decode($response, true);
+
+        // Cerca il tag 'wikidata' nei risultati
+        foreach ($json['elements'] as $element) {
+            if (isset($element['tags']['wikidata'])) {
+                return $element['tags']['wikidata'];
+            }
+        }
+
+        return 'Nessun QID trovato per queste coordinate';
+    }
+
+    // Coordinate per esempio (Milano)
+    $lat = 45.4642;
+    $lon = 9.1900;
+
+    // Ottieni il QID da Wikidata per le coordinate
+    $wikidata_qid = wikidata_from_coords($lat, $lon);
+
+    // Mostra il risultato nella pagina HTML
+    echo "<p>Le coordinate ($lat, $lon) corrispondono a:</p>";
+    echo "<p><strong>Wikidata QID:</strong> " . $wikidata_qid . "</p>";
+    ?>
+
+    
+
                 <?php
                     for ($i = 0; $i < 15; $i++) {
                         echo "<br>";
                     }
                 ?>
+
+                
                 
                 <div class="card shadow-sm w-100 w-md-75 w-lg-50"> <!-- Banner di presentazione -->
                     <div class="card-body d-flex flex-column flex-md-row align-items-center gap-3">

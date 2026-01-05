@@ -1,0 +1,134 @@
+[
+  {
+    "name": "Marco Grena",
+    "age": 44
+  },
+  {
+    "name": "Diego Bernini",
+    "age": 43
+  },
+  {
+    "name": "Matusalemme",
+    "age": 1000
+  },
+  {
+    "name": "Super User",
+    "age": 0,
+    "role": "admin",
+    "data": {
+      "email": "super.user@domain.it",
+      "phone": "+391234567890"
+    }
+  },
+  {
+    "name": "hashmap",
+    "age": 432
+  },
+  {
+    "name": "testtest",
+    "age": 0
+  },
+  {
+    "name": "Sempronio",
+    "age": 50,
+    "data": {
+      "hobby": "matematica"
+    }
+  },
+  {
+    "name": "Rossi",
+    "age": 30,
+    "data": {
+      "hobby": "calcio"
+    }
+  },
+  {
+    "name": "Bianchi",
+    "age": 25,
+    "data": {
+      "hobby": "musica"
+    }
+  },
+  {
+    "name": "Verdi",
+    "age": 28,
+    "data": {
+      "hobby": "lettura"
+    }
+  },
+  {
+    "name": "Marco",
+    "age": 18,
+    "role": "SuperAdmin",
+    "data": {
+      "hobby": "Informatica",
+      "colore": "arancione"
+    }
+  },
+  {
+    "name": "Fabrizio",
+    "age": 18,
+    "role": "SuperAdmin",
+    "data": {}
+  },
+  {
+    "name": "reminder!!!!",
+    "age": 13,
+    "role": "",
+    "data": {
+      "ricorda": "la edit crea una modal con una form tipo quella di add user in una modal"
+    }
+  },
+  {
+    "name": "reminder2!!!!",
+    "age": 1,
+    "role": "",
+    "data": {
+      "a": "quando crei l'utente, non ricaricare la pagina, ma aggiungi solo la card (infdatti come puoi notare nella console continua a dire che la verisone locale è sbagliata, come faceva con la delete prima)"
+    }
+  },
+  {
+    "name": "eee",
+    "age": 2289,
+    "role": "",
+    "data": {}
+  },
+  {
+    "name": "aa",
+    "age": 13,
+    "role": "",
+    "data": {
+      "a": "a"
+    }
+  },
+  {
+    "name": "rr",
+    "age": 3,
+    "role": "",
+    "data": {
+      "rr": "r"
+    }
+  },
+  {
+    "name": "tt",
+    "age": 4,
+    "role": "",
+    "data": {
+      "tt": "tt"
+    }
+  },
+  {
+    "name": "ttt",
+    "age": 4,
+    "role": "",
+    "data": {
+      "43": "43"
+    }
+  },
+  {
+    "name": "fsdagfsd",
+    "age": 33,
+    "role": "",
+    "data": {}
+  }
+]
