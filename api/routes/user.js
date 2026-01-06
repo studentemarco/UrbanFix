@@ -32,61 +32,37 @@ function authMiddleware(req, res, next) {
  */
 /**
  * @swagger
- * /users:
+ * /problemi:
  *   get:
  *     tags:
- *       - Users
-
- *     summary: Retrieve a list of users
+ *       - Problemi
+ *     summary: Recupera la lista dei problemi attivi dal database MariaDB
  *     responses:
  *       200:
- *         description: A list of users
+ *         description: Lista dei problemi caricata con successo
+ *       500:
+ *         description: Errore del server database
  */
-// Conditional GET middleware for /users (use only Last-Modified)
-router.use('/users', (req, res, next) => {
-    // Apply conditional GET only to safe idempotent methods
-    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
 
-    const usersPath = path.join(__dirname, '../../users.json');
-    fs.stat(usersPath, (statErr, stats) => {
-        if (statErr) return next(); // let the route handle missing file / errors
+router.get('/problemi', (req, res) => {
 
-        const lastModified = stats.mtime.toUTCString();
-        res.setHeader('Last-Modified', lastModified);
-
-        const ifModifiedSince = req.headers['if-modified-since'];
-        if (ifModifiedSince) {
-            const imsTime = Date.parse(ifModifiedSince);
-            if (!isNaN(imsTime) && imsTime >= stats.mtime.getTime()) {
-                return res.status(304).end();
-            }
-        }
-
-        next();
-    });
-});
-router.get('/users', (req, res) => {
-    //const usersPath = path.join(__dirname, '../../users.json');
-
-    // accesso al database Database alla tabella UrbanFix_Problemi
-    /*problemi = [
-        { id: 1, titolo: "Buche stradali", descrizione: "Ci sono molte buche sulla strada principale." },
-        { id: 2, titolo: "Illuminazione insufficiente", descrizione: "Le luci stradali non funzionano correttamente in alcune aree." },
-        { id: 3, titolo: "Raccolta rifiuti irregolare", descrizione: "La raccolta dei rifiuti non avviene secondo il calendario previsto." }
-    ];*/
-    //popola prolemi con i dati del database con mysql
     const mysql = require('mysql2');
 
     const connection = mysql.createConnection({
         host: 'localhost',
         user: 'utente_phpmyadmin',
         password: 'password_sicura',
-        database: 'UrbanFixDB'
+        database: 'Database'
     });
 
     connection.connect();
 
-    connection.query('SELECT id, titolo, descrizione FROM UrbanFix_Problemi', (error, results, fields) => {
+    let q = `select * from UrbanFix_Problemi
+            where stato != 'risolto'
+                AND ID NOT IN (SELECT Problemi_ID FROM UrbanFix_EliminaP)
+            order by timestampSegnalazione desc`;
+
+    connection.query(q, (error, results, fields) => {
         if (error) {
             console.error('Errore durante la query:', error);
             return res.status(500).json({ error: 'Errore del server durante il recupero dei dati.' });
@@ -96,77 +72,526 @@ router.get('/users', (req, res) => {
     });
 
     connection.end();
+});
 
-    //
-    res.status(200).json(problemi);
-    // fs.readFile(usersPath, 'utf8', (err, data) => {
-    //     if (err) {
-    //         return res.status(500).json({ error: 'Impossibile leggere il file utenti.' });
-    //     }
-    //     try {
-    //         const users = JSON.parse(data);
-    //         //sort users by name
-    //         users.sort((a, b) => a.name.localeCompare(b.name));
-    //         //only name and age fields
-    //         users.forEach(user => {
-    //             for (const key in user) {
-    //                 if (key !== 'name' && key !== 'age') {
-    //                     delete user[key];
-    //                 }
-    //             }
-    //         });
-    //         res.status(200).json(users);
-    //     } catch (parseErr) {
-    //         res.status(500).json({ error: 'Errore nel parsing del file utenti.' });
-    //     }
-    // });
+/**
+ * @swagger
+ * /problemi/{id}:
+ *   get:
+ *     tags:
+ *       - Problemi
+ *     summary: Recupera i dettagli di un singolo problema attivo tramite ID
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: L'ID del problema da recuperare
+ *     responses:
+ *       200:
+ *         description: Dettagli del problema recuperati con successo
+ *       404:
+ *         description: Problema non trovato o eliminato
+ *       500:
+ *         description: Errore del server database
+ */
 
-    /*
-    leggi il database
-    */
+router.get('/problemi/:id', (req, res) => {
+
+    const idProblema = req.params.id;
+
+    const mysql = require('mysql2');
+
+    const connection = mysql.createConnection({
+        host: 'localhost',
+        user: 'utente_phpmyadmin',
+        password: 'password_sicura',
+        database: 'Database'
+    });
+
+    connection.connect();
+
+    let q = `select * from UrbanFix_Problemi
+            where id = ?
+                AND ID NOT IN (SELECT Problemi_ID FROM UrbanFix_EliminaP)
+            order by timestampSegnalazione desc`;   // il ? serve per evitare SQL Injection, il valore della variabile viene passato come parametro a connection.query
+
+    connection.query(q, [idProblema], (error, results, fields) => {
+        if (error) {
+            console.error('Errore durante la query:', error);
+            return res.status(500).json({ error: 'Errore del server durante il recupero dei dati.' });
+        }
+        if (results.length === 0) {
+            return res.status(404).json({ error: 'Problema non trovato.' });
+        } else{
+            problemi = results;
+        }
+        res.status(200).json(problemi);
+    });
+
+    connection.end();
+});
+
+/**
+ * @swagger
+ * /problemi/comune/{qid}:
+ *   get:
+ *     tags:
+ *       - Problemi
+ *     summary: Recupera la lista dei problemi attivi per Comune (QID)
+ *     parameters:
+ *       - in: path
+ *         name: qid
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Il QID del comune (es. Q220)
+ *     responses:
+ *       200:
+ *         description: Lista dei problemi recuperata con successo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   ID:
+ *                     type: integer
+ *                     example: 22
+ *                   descrizione:
+ *                     type: string
+ *                     example: "Buche profonde in via Roma"
+ *                   coordinate:
+ *                     type: string
+ *                     example: "41.9028,12.4964"
+ *                   stato:
+ *                     type: string
+ *                     example: "aperto"
+ *                   timestampStato:
+ *                     type: string
+ *                     format: date-time
+ *                     example: "2026-01-04T14:06:07.000Z"
+ *                   timestampSegnalazione:
+ *                     type: string
+ *                     format: date-time
+ *                     example: "2026-01-04T14:06:07.000Z"
+ *                   Comuni_QID:
+ *                     type: string
+ *                     example: "Q220"
+ *                   Utenti_email:
+ *                     type: string
+ *                     example: "anna.bianchi@mail.it"
+ *       404:
+ *         description: Nessun problema trovato per il comune specificato
+ *       500:
+ *         description: Errore del server database
+ */
+
+
+router.get('/problemi/comune/:qid', (req, res) => {
+
+    const qidProblema = req.params.qid;
+
+    const mysql = require('mysql2');
+
+    const connection = mysql.createConnection({
+        host: 'localhost',
+        user: 'utente_phpmyadmin',
+        password: 'password_sicura',
+        database: 'Database'
+    });
+
+    connection.connect();
+
+    let q = `select * from UrbanFix_Problemi
+            where stato != 'risolto' and Comuni_QID = ?
+            order by timestampSegnalazione desc;`;
+
+    connection.query(q, [qidProblema], (error, results, fields) => {
+        if (error) {
+            console.error('Errore durante la query:', error);
+            return res.status(500).json({ error: 'Errore del server durante il recupero dei dati.' });
+        }
+        if (results.length === 0) {
+            return res.status(404).json({ error: 'Nessun problema trovato per il comune specificato.' });
+        } else{
+            problemi = results;
+        }
+        res.status(200).json(problemi);
+    });
+
+    connection.end();
 });
 
 
 /**
  * @swagger
- * /users/{name}:
+ * /problemi/utente/{email}:
  *   get:
  *     tags:
- *       - Users
-
- *     summary: Retrieve users with specific name
+ *       - Problemi
+ *     summary: Recupera la lista dei problemi segnalati da uno specifico utente
  *     parameters:
- *      - in: path
- *        name: name
- *        required: true
- *        schema:
- *          type: string
- *        description: The name of the user to retrieve
+ *       - in: path
+ *         name: email
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: email
+ *         description: L'indirizzo email dell'utente (es. anna.bianchi@mail.it)
  *     responses:
  *       200:
- *         description: Details of the user
+ *         description: Lista dei problemi dell'utente recuperata con successo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   ID:
+ *                     type: integer
+ *                     example: 22
+ *                   descrizione:
+ *                     type: string
+ *                     example: "Buche profonde in via Roma"
+ *                   coordinate:
+ *                     type: string
+ *                     example: "41.9028,12.4964"
+ *                   stato:
+ *                     type: string
+ *                     example: "aperto"
+ *                   timestampStato:
+ *                     type: string
+ *                     format: date-time
+ *                     example: "2026-01-04T14:06:07.000Z"
+ *                   timestampSegnalazione:
+ *                     type: string
+ *                     format: date-time
+ *                     example: "2026-01-04T14:06:07.000Z"
+ *                   Comuni_QID:
+ *                     type: string
+ *                     example: "Q220"
+ *                   Utenti_email:
+ *                     type: string
+ *                     example: "anna.bianchi@mail.it"
  *       404:
- *         description: User not found
+ *         description: Nessun problema trovato per l'utente specificato
+ *       500:
+ *         description: Errore del server database
  */
 
-router.get('/users/:name', (req, res) => {
-    const usersPath = path.join(__dirname, '../../users.json');
-    fs.readFile(usersPath, 'utf8', (err, data) => {
-        if (err) {
-            return res.status(500).json({ error: 'Impossibile leggere il file utenti.' });
-        }
-        try {
-            const users = JSON.parse(data);
-            const user = users.find(u => u.name === req.params.name);
-            if (!user) {
-                return res.status(404).json({ error: 'Utente non trovato.' });
-            }
-            res.status(200).json(user);
-        } catch (parseErr) {
-            res.status(500).json({ error: 'Errore nel parsing del file utenti.' });
-        }
+router.get('/problemi/utente/:email', (req, res) => {
+
+    const emailUtente = req.params.email;
+
+    const mysql = require('mysql2');
+
+    const connection = mysql.createConnection({
+        host: 'localhost',
+        user: 'utente_phpmyadmin',
+        password: 'password_sicura',
+        database: 'Database'
     });
+
+    connection.connect();
+
+    let q = `select * from UrbanFix_Problemi
+            where Utenti_Email = ?
+            order by timestampSegnalazione desc;`;
+
+    connection.query(q, [emailUtente], (error, results, fields) => {
+        if (error) {
+            console.error('Errore durante la query:', error);
+            return res.status(500).json({ error: 'Errore del server durante il recupero dei dati.' });
+        }
+        if (results.length === 0) {
+            return res.status(404).json({ error: 'Nessun problema trovato per l\'utente specificato.' });
+        } else{
+            problemi = results;
+        }
+        res.status(200).json(problemi);
+    });
+
+    connection.end();
 });
+
+/**
+ * @swagger
+ * /problemi/{id}/commenti:
+ *   get:
+ *     tags:
+ *       - Commenti
+ *     summary: Recupera i commenti di un problema
+ *     description: Restituisce la lista dei commenti associati a un ID problema, escludendo quelli presenti nella tabella UrbanFix_EliminaC.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: L'ID univoco del problema (es. 10)
+ *     responses:
+ *       200:
+ *         description: Lista dei commenti recuperata con successo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   ID:
+ *                     type: integer
+ *                     example: 101
+ *                   Problemi_ID:
+ *                     type: integer
+ *                     example: 10
+ *                   testo:
+ *                     type: string
+ *                     example: "Hanno transennato l'area proprio ora."
+ *                   time:
+ *                     type: string
+ *                     format: date-time
+ *                     example: "2026-01-06T17:15:00.000Z"
+ *                   Utenti_email:
+ *                     type: string
+ *                     example: "mario.rossi@mail.it"
+ *       404:
+ *         description: Nessun commento trovato per il problema specificato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Nessun commento trovato per il problema specificato."
+ *       500:
+ *         description: Errore del server database
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Errore del server durante il recupero dei dati."
+ */
+
+router.get('/problemi/:id/commenti', (req, res) => {
+
+    const idProblema = req.params.id;
+
+    const mysql = require('mysql2');
+
+    const connection = mysql.createConnection({
+        host: 'localhost',
+        user: 'utente_phpmyadmin',
+        password: 'password_sicura',
+        database: 'Database'
+    });
+
+    connection.connect();
+
+    let q = `select * from UrbanFix_Commenti
+            where Problemi_ID = ?
+                AND ID NOT IN (SELECT Commenti_ID FROM UrbanFix_EliminaC)
+            order by time desc;`;
+
+    connection.query(q, [idProblema], (error, results, fields) => {
+        if (error) {
+            console.error('Errore durante la query:', error);
+            return res.status(500).json({ error: 'Errore del server durante il recupero dei dati.' });
+        }
+        if (results.length === 0) {
+            return res.status(404).json({ error: 'Nessun commento trovato per il problema specificato.' });
+        } else{
+            commenti = results;
+        }
+        res.status(200).json(commenti);
+    });
+
+    connection.end();
+});
+
+/**
+ * @swagger
+ * /problemi/{id}/immagini:
+ *   get:
+ *     tags:
+ *       - Problemi
+ *     summary: Recupera le immagini associate a un problema
+ *     description: Restituisce l'elenco delle immagini collegate a un ID problema, verificando che il problema non sia stato eliminato.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: L'ID del problema di cui recuperare le immagini
+ *     responses:
+ *       200:
+ *         description: Lista delle immagini recuperata con successo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   ID:
+ *                     type: integer
+ *                     example: 50
+ *                   URL:
+ *                     type: string
+ *                     example: "esempio.it"
+ *                   Problemi_ID:
+ *                     type: integer
+ *                     example: 10
+ *       404:
+ *         description: Nessun immagine trovata o il problema è stato eliminato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Nessun immagine trovata per il problema specificato."
+ *       500:
+ *         description: Errore interno del server
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Errore del server durante il recupero dei dati."
+ */
+
+router.get('/problemi/:id/immagini', (req, res) => {
+
+    const idProblema = req.params.id;
+
+    const mysql = require('mysql2');
+
+    const connection = mysql.createConnection({
+        host: 'localhost',
+        user: 'utente_phpmyadmin',
+        password: 'password_sicura',
+        database: 'Database'
+    });
+
+    connection.connect();
+
+    let q = `select * from UrbanFix_ImmaginiP
+            where Problemi_ID = ?
+                AND Problemi_ID NOT IN (SELECT Problemi_ID FROM UrbanFix_EliminaP);`;
+
+    connection.query(q, [idProblema], (error, results, fields) => {
+        if (error) {
+            console.error('Errore durante la query:', error);
+            return res.status(500).json({ error: 'Errore del server durante il recupero dei dati.' });
+        }
+        if (results.length === 0) {
+            return res.status(404).json({ error: 'Nessun immagine trovata per il problema specificato.' });
+        } else{
+            immagini = results;
+        }
+        res.status(200).json(immagini);
+    });
+
+    connection.end();
+});
+
+/**
+ * @swagger
+ * /problemi/{id}/tipologie:
+ *   get:
+ *     tags:
+ *       - Problemi
+ *     summary: Recupera le tipologie associate a un problema
+ *     description: Restituisce l'elenco delle tipologie collegate a un ID problema.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: L'ID del problema di cui recuperare le tipologie
+ *     responses:
+ *       200:
+ *         description: Lista delle tipologie recuperata con successo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   Tipologie_nome:
+ *                     type: string
+ *                     example: "Buche stradali"
+ *       404:
+ *         description: Nessuna tipologia trovata per il problema specificato
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Nessuna tipologia trovata per il problema specificato."
+ *       500:
+ *         description: Errore interno del server
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Errore del server durante il recupero dei dati."
+ */
+
+router.get('/problemi/:id/tipologie', (req, res) => {
+
+    const idProblema = req.params.id;
+
+    const mysql = require('mysql2');
+
+    const connection = mysql.createConnection({
+        host: 'localhost',
+        user: 'utente_phpmyadmin',
+        password: 'password_sicura',
+        database: 'Database'
+    });
+
+    connection.connect();
+
+    let q = `select Tipologie_nome from UrbanFix_Categoria
+            where Problemi_ID = ?`;
+
+    connection.query(q, [idProblema], (error, results, fields) => {
+        if (error) {
+            console.error('Errore durante la query:', error);
+            return res.status(500).json({ error: 'Errore del server durante il recupero dei dati.' });
+        }
+        if (results.length === 0) {
+            return res.status(404).json({ error: 'Nessuna tipologia trovata per il problema specificato.' });
+        } else{
+            tipologie = results;
+        }
+        res.status(200).json(tipologie);
+    });
+
+    connection.end();
+});
+
 
 /**
  * @swagger
