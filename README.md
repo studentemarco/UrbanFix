@@ -71,12 +71,14 @@ https://zupolinomarco5ie.altervista.org/urbanfix.php
 
 ---
 ## Diagrammi: ER, casi d'uso, classi
+### Diagramma delle classi
 
-![Alt text](./img/UML_Class_UrbanFix.svg)
 <img src="./img/UML_Class_UrbanFix.svg">
 
-![Alt text](./img/UML_ER_UrbanFix.svg)
+### Diagramma ER
+
 <img src="./img/UML_ER_UrbanFix.svg">
 
-![Alt text](./img/UML_UseCases_UrbanFix.svg)
+### Diagramma dei casi d'uso
+
 <img src="./img/UML_UseCases_UrbanFix.svg">
