@@ -68,3 +68,15 @@ https://zupolinomarco5ie.altervista.org/urbanfix.php
   - per distanza da un punto scelto,
   - per popolarità,
   - per data.
+
+---
+## Diagrammi: ER, casi d'uso, classi
+
+![Alt text](./img/UML_Class_UrbanFix.svg)
+<img src="./img/UML_Class_UrbanFix.svg">
+
+![Alt text](./img/UML_ER_UrbanFix.svg)
+<img src="./img/UML_ER_UrbanFix.svg">
+
+![Alt text](./img/UML_UseCases_UrbanFix.svg)
+<img src="./img/UML_UseCases_UrbanFix.svg">
