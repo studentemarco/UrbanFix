@@ -11,7 +11,7 @@ $email = $_POST['email'] ?? null;
 $password = $_POST['password'] ?? null;
 
 if (!$nome || !$cognome || !$email || !$password) {
-    header("Location: registrati.php?errore=Tutti i campi sono obbligatori");
+    header("Location: registrazione.php?errore=Tutti i campi sono obbligatori");
     exit;
 }
 
