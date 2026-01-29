@@ -80,11 +80,11 @@
     $lon = 9.1900;
 
     // Ottieni il QID da Wikidata per le coordinate
-    $wikidata_qid = wikidata_from_coords($lat, $lon);
+    //$wikidata_qid = wikidata_from_coords($lat, $lon);
 
     // Mostra il risultato nella pagina HTML
-    echo "<p>Le coordinate ($lat, $lon) corrispondono a:</p>";
-    echo "<p><strong>Wikidata QID:</strong> " . $wikidata_qid . "</p>";
+    // echo "<p>Le coordinate ($lat, $lon) corrispondono a:</p>";
+    // echo "<p><strong>Wikidata QID:</strong> " . $wikidata_qid . "</p>";
     ?>
 
     

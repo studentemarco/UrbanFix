@@ -5,6 +5,7 @@
         header("location: ../index.php");
         exit();
     }
+    //phpinfo();
 
 ?>
 <!doctype html>
@@ -40,13 +41,28 @@
                 include '../message.php';
             ?>
 
-            <form action="login.php" method="post">
-                <label class="form-label">Username: </label>
-                <input type="text" class="form-control" name="username" placeholder="Inserisci username" />
+            <div id="err"></div>
+
+            <form action="login.php" method="POST">
+                <label class="form-label">Email: </label>
+                <input type="email" class="form-control" name="email" placeholder="Inserisci email" required />
                 <label class="form-label">Password: </label>
-                <input type="password" class="form-control" name="password" placeholder="Inserisci password" />
+                <input type="password" class="form-control" name="password" placeholder="Inserisci password" required />
                 <input type="submit" class="btn btn-primary mt-3" value="Login" />
             </form>
+<!-- 
+            <form id="loginForm">
+                <label>Email</label>
+                <input type="email" name="email" required>
+
+                <label>Password</label>
+                <input type="password" name="password" required>
+
+                <button type="submit">Login</button>
+            </form> -->
+
+            <!--  -->
+
 
             <br><br>
 
@@ -55,6 +71,41 @@
             <!-- <a href="registrazione.php" class="btn btn-primary mt-3">Registrati</a> -->
             </div>
         </main>
+
+        <!-- <script>
+            document.getElementById("loginForm").addEventListener("submit", async function (e) {
+                e.preventDefault();
+
+                const email = this.email.value;
+                const password = this.password.value;
+
+                const response = await fetch(
+                    "https://fluffy-space-telegram-wrvrw59ppq7g294p7-80.app.github.dev/progetto/api/login",
+                    {
+                        method: "POST",
+                        credentials: "include", // IMPORTANTISSIMO (cookie JWT)
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            email: email,
+                            password: password
+                        })
+                    }
+                );
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    window.location.href = "../index.php";
+                } else {
+                    document.getElementById("err").innerHTML = '<h2 id="errore" class="alert alert-danger position-fixed top-0 start-50 translate-middle-x mt-3" style="z-index: 1050; width: auto; max-width: 90%;"></h2>';
+                    document.getElementById("errore").innerText =
+                        data.description || "Errore login";
+                }
+            });
+        </script> -->
+
 
         <script src="../deleteMessage.js"></script>
 

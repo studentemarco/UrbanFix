@@ -1,51 +1,52 @@
 <?php
-    session_start();
-    if (!isset($_POST["username"]) || !isset($_POST["password"]) || empty(trim($_POST["username"])) || empty(trim($_POST["password"]))) {
-        header("Location: registrazione.php?errore=Compila tutti i campi");
-        exit();
-    }
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+require_once '../config.php'; // Assicurati che API_URL sia definito qui
 
-    $file = "utenti.json";
+session_start();
 
-    if (file_exists($file)){
-        $utenti = json_decode(file_get_contents("./utenti.json"));
-    } else {
-        $utenti = [];
-    }
+$nome = $_POST['name'] ?? null;
+$cognome = $_POST['surname'] ?? null;
+$email = $_POST['email'] ?? null;
+$password = $_POST['password'] ?? null;
 
-    foreach ($utenti as $utente) {
-        if ($utente->username === trim($_POST["username"])) {
-            error_log("Username già esistente");
-            header("Location: registrazione.php?errore=Username gia esistente");
-            die();
-        }
-    }
+if (!$nome || !$cognome || !$email || !$password) {
+    header("Location: registrati.php?errore=Tutti i campi sono obbligatori");
+    exit;
+}
 
-    $newUser = new stdClass();
-    $newUser->username = trim($_POST["username"]);
-    $salt = bin2hex(random_bytes(16));
-    var_dump($salt);
-    $pepper = trim(file_get_contents("./pepper.txt"));
-    $newUser->password = $salt . hash("sha256", ((trim($_POST["password"])) . $salt . $pepper));
-    $newUser->role = "user";
-    $newUser->userid = random_int(0, 10000);
-    //controlla che non esista gia un userid cosi
-    foreach ($utenti as $utente) {
-        while ($utente->userid === $newUser->userid) {
-            $newUser->userid = random_int(0, 10000);
-        }
-    }
+$context = stream_context_create([
+    'http' => [
+        'method' => 'POST',
+        'header' => [
+            "Content-Type: application/json"
+            // "Origin: " . SERVER_URL 
+        ],
+        'content' => json_encode([
+            "nome" => $nome,
+            "cognome" => $cognome,
+            "email" => $email,
+            "password" => $password
+        ]),
+        'ignore_errors' => true // Permette di leggere il body anche se l'HTTP status è 4xx o 5xx
+    ]
+]);
 
-    require "usersdata.php";
+$response = file_get_contents(
+    API_URL . "register", 
+    false, 
+    $context
+);
 
-    $u = new UserData($newUser->userid);
-    $u->salva();
+$data = json_decode($response, true);
 
-    //$newUser->salt = $salt;
+if (!$data || !isset($data["success"]) || !$data["success"]) {
+    $messaggio = $data["description"] ?? "Errore durante la registrazione";
+    header("Location: registrati.php?errore=" . urlencode($messaggio));
+    exit;
+}
 
-    $utenti[] = $newUser;
-    file_put_contents("./utenti.json", json_encode($utenti));
+header("Location: accedi.php?messaggio=" . urlencode("Registrazione completata! Ora puoi accedere."));
 
-    header("Location: accedi.php?successo=Registrazione avvenuta con successo, effettua il login");
-    exit();
+exit;
 ?>

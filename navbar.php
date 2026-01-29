@@ -28,24 +28,26 @@ $baseUrl = rtrim($baseUrl, '/');
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+            <?php
+                if (session_status() === PHP_SESSION_NONE) session_start();
+                $is_logged = isset($_SESSION['token']) && !empty($_SESSION['token']);
+            ?>
             <div class="navbar-nav">
             <a class="nav-link <?php if ($current_page == 'index') echo 'active'; ?>" href="<?php echo $baseUrl; ?>/index.php">Home</a>
+            <?php if ($is_logged) : ?> 
+                <a class="nav-link <?php if ($current_page == 'segnalazioni') echo 'active'; ?>" href="<?php echo $baseUrl; ?>/segnalazioni.php">Segnalazioni</a>
+            <?php endif; ?>
             </div>
 
             <?php if ($current_page != 'account') : ?>  
 
-                <?php
-                if (session_status() === PHP_SESSION_NONE) session_start();
-                $is_logged = isset($_SESSION['name']) && !empty($_SESSION['name']);
-                ?>
 
                 <div class="ms-auto d-flex align-items-center">
                     <?php if (!$is_logged): ?>
                         <a href="account/accedi.php" class="btn btn-outline-primary btn-sm me-2">Login</a>
                         <a href="account/registrazione.php" class="btn btn-primary btn-sm">Registrati</a>
                     <?php else:
-                        $user = $_SESSION['name'];
-                        $displayName = htmlspecialchars($user['name'] ?? $user['username'] ?? 'Utente', ENT_QUOTES, 'UTF-8');
+                        $displayName = htmlspecialchars($_SESSION['name'] ?? $_SESSION['surname'] ?? $_SESSION['email'] ?? 'Utente', ENT_QUOTES, 'UTF-8');
                     ?>
                         <div class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
