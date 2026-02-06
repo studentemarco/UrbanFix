@@ -42,7 +42,7 @@ $data = json_decode($response, true);
 
 if (!$data || !isset($data["success"]) || !$data["success"]) {
     $messaggio = $data["description"] ?? "Errore durante la registrazione";
-    header("Location: registrati.php?errore=" . urlencode($messaggio));
+    header("Location: registrazione.php?errore=" . urlencode($messaggio));
     exit;
 }
 

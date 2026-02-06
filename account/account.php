@@ -1,0 +1,76 @@
+<?php
+    session_start();
+
+    if(!isset($_SESSION["name"])){
+        header("location: login.php");
+        exit();
+    }
+
+?>
+<!doctype html>
+<html lang="en">
+    <head>
+        <title>Pagina account</title>
+        <!-- Required meta tags -->
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, shrink-to-fit=no"
+        />
+
+        <!-- Bootstrap CSS v5.2.1 -->
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+            integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+            crossorigin="anonymous"
+        />
+        <link rel="stylesheet" href="../style.css">
+    </head>
+
+    <body>
+        <header>
+            <?php $current_page = 'account'; include '../navbar.php'; ?>
+        </header>
+        <main class="container" style="margin-top: 50px;">
+            <div class="container mt-5">
+            <h1>Pagina account</h1>
+            
+            <?php
+                include '../message.php';
+            ?>
+
+            <form action="salvaRegistrazione.php" method="post">
+                <label class="form-label">Nome: </label>
+                <input type="text" class="form-control" name="name" placeholder="Inserisci nome" maxlength="100"/>
+                <label class="form-label">Cognome: </label>
+                <input type="text" class="form-control" name="surname" placeholder="Inserisci cognome" maxlength="100"/>
+                <label class="form-label">Email: </label>
+                <input type="text" class="form-control" name="email" placeholder="Inserisci email" maxlength="254"/>
+                <label class="form-label">Password: </label>
+                <input type="password" class="form-control" name="password" placeholder="Inserisci password" />
+                <input type="submit" class="btn btn-primary mt-3" value="Registrati" />
+            </form>
+
+            <br> 
+
+            <h6>Hai già un account? <a href="accedi.php">Accedi</a></h6>
+
+            </div>
+        </main>
+
+        <script src="../deleteMessage.js"></script>
+
+        <script
+            src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+            integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+            crossorigin="anonymous"
+        ></script>
+
+        <script
+            src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"
+            integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+"
+            crossorigin="anonymous"
+        ></script>
+    </body>
+</html>

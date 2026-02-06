@@ -28,7 +28,7 @@
     ]);
 
 
-    var_dump(API_URL . "ruolo/".$email);
+    //var_dump(API_URL . "ruolo/".$email);
 
     $response = file_get_contents(
         API_URL . "privilegi/".$email,
@@ -153,6 +153,8 @@
                     </div>
                 </div>
 
+                
+
                 <?php if (può('GESTISCI_UTENTI', $privilegi) || può('GESTISCI_AMMINISTRAZIONI', $privilegi) || può('GESTISCI_COMUNE', $privilegi)): ?>
                 <div class="admin-section">
                     <h4 class="text-danger">Pannello Amministrazione</h4>
@@ -171,6 +173,40 @@
                     </div>
                 </div>
                 <?php endif; ?>
+
+                <?php 
+                    $context = stream_context_create([
+                        'http' => [
+                            'method' => 'GET',
+                            'header' => [
+                                "Content-Type: application/json",
+                                "Authorization: Bearer " . ($_SESSION['token'] ?? '')
+                                // "Origin: " . SERVER_URL 
+                            ],
+                            'ignore_errors' => true // Permette di leggere il body anche se l'HTTP status è 4xx o 5xx
+                        ]
+                    ]);
+
+                    $response = file_get_contents(
+                        API_URL . "problemi", 
+                        false, 
+                        $context
+                    );
+
+                    $data = json_decode($response, true);
+
+                    // if (!$data || !isset($data["success"]) || !$data["success"]) {
+                    //     $messaggio = $data["description"] ?? "Errore durante il recupero dei problemi";
+                    //     echo "<div class='alert alert-danger'>$messaggio</div>";
+                    // }
+
+                    foreach ($data["data"] as $problema) {
+                        //var_dump($problema);
+                        include 'segnalazioneTemplate.php';
+                        //va a capo
+                        echo "<hr/>";
+                    }
+                ?>
 
             </div>
         </main>
