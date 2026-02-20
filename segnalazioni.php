@@ -111,6 +111,26 @@
         </header>
         <main>
             <div class="container my-5">
+                <?php if (può('GESTISCI_UTENTI', $privilegi) || può('GESTISCI_AMMINISTRAZIONI', $privilegi) || può('GESTISCI_COMUNE', $privilegi)): ?>
+                <div class="admin-section d-flex justify-content-center gap-2">
+                    <h4 class="text-danger">Pannello Amministrazione</h4>
+                    <div class="d-flex gap-2">
+                        <?php if (può('GESTISCI_UTENTI', $privilegi)): ?>
+                            <a href="admin_utenti.php" class="btn btn-danger">👤 Gestione Utenti</a>
+                        <?php endif; ?>
+        
+                        <?php if (può('GESTISCI_COMUNE', $privilegi)): ?>
+                            <a href="admin_comune.php" class="btn btn-danger">🏛️ Gestione Comune</a>
+                        <?php endif; ?>
+        
+                        <?php if (può('GESTISCI_AMMINISTRAZIONI', $privilegi)): ?>
+                            <a href="admin_enti.php" class="btn btn-danger">🏢 Gestione Enti</a>
+                        <?php endif; ?>
+                    </div>
+                    <hr>
+                </div>
+                <?php endif; ?>
+                
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <div>
                         <h1>Segnalazioni</h1>
@@ -131,48 +151,8 @@
                         <button class="btn btn-outline-warning">Aggiorna Stati</button>
                     <?php endif; ?>
                 </div>
-
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h5 class="card-title">Buca profonda in Via Roma</h5>
-                        <p class="card-text">Segnalata da: utente@mail.it</p>
-                        
-                        <div class="mt-3 border-top pt-2">
-                            <?php if (può('VOTA_SEGNALAZIONE', $privilegi)): ?>
-                                <button class="btn btn-sm btn-outline-primary">👍 Vota</button>
-                            <?php endif; ?>
-
-                            <?php if (può('COMMENTA_SEGNALAZIONE', $privilegi)): ?>
-                                <button class="btn btn-sm btn-outline-secondary">💬 Commenta</button>
-                            <?php endif; ?>
-
-                            <?php if (può('SEGNALA_RISOLTA', $privilegi)): ?>
-                                <button class="btn btn-sm btn-success float-end">Segna come Risolta</button>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-
                 
 
-                <?php if (può('GESTISCI_UTENTI', $privilegi) || può('GESTISCI_AMMINISTRAZIONI', $privilegi) || può('GESTISCI_COMUNE', $privilegi)): ?>
-                <div class="admin-section">
-                    <h4 class="text-danger">Pannello Amministrazione</h4>
-                    <div class="d-flex gap-2">
-                        <?php if (può('GESTISCI_UTENTI', $privilegi)): ?>
-                            <a href="admin_utenti.php" class="btn btn-danger">👤 Gestione Utenti</a>
-                        <?php endif; ?>
-
-                        <?php if (può('GESTISCI_COMUNE', $privilegi)): ?>
-                            <a href="admin_comune.php" class="btn btn-danger">🏛️ Gestione Comune</a>
-                        <?php endif; ?>
-
-                        <?php if (può('GESTISCI_AMMINISTRAZIONI', $privilegi)): ?>
-                            <a href="admin_enti.php" class="btn btn-danger">🏢 Gestione Enti</a>
-                        <?php endif; ?>
-                    </div>
-                </div>
-                <?php endif; ?>
 
                 <?php 
                     $context = stream_context_create([
