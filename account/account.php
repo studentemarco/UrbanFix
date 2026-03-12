@@ -40,21 +40,25 @@
                 include '../message.php';
             ?>
 
-            <form action="salvaRegistrazione.php" method="post">
+            <form action="modificaAccount.php" method="post">
                 <label class="form-label">Nome: </label>
-                <input type="text" class="form-control" name="name" placeholder="Inserisci nome" maxlength="100"/>
+                <input type="text" class="form-control" name="name" value="<?php echo htmlspecialchars($_SESSION['name'] ?? ''); ?>" maxlength="100" required />
                 <label class="form-label">Cognome: </label>
-                <input type="text" class="form-control" name="surname" placeholder="Inserisci cognome" maxlength="100"/>
+                <input type="text" class="form-control" name="surname" value="<?php echo htmlspecialchars($_SESSION['surname'] ?? ''); ?>" maxlength="100" required />
                 <label class="form-label">Email: </label>
-                <input type="text" class="form-control" name="email" placeholder="Inserisci email" maxlength="254"/>
-                <label class="form-label">Password: </label>
-                <input type="password" class="form-control" name="password" placeholder="Inserisci password" />
-                <input type="submit" class="btn btn-primary mt-3" value="Registrati" />
+                <input type="email" class="form-control" name="email" value="<?php echo htmlspecialchars($_SESSION['email'] ?? ''); ?>" maxlength="254" required />
+                <hr>
+                <label class="form-label">Password attuale: </label>
+                <input type="password" class="form-control" name="current_password" placeholder="Password attuale" required />
+                <label class="form-label">Nuova password: </label>
+                <input type="password" class="form-control" name="new_password" placeholder="Nuova password" />
+                <label class="form-label">Conferma nuova password: </label>
+                <input type="password" class="form-control" name="confirm_password" placeholder="Conferma nuova password" />
+                <input type="submit" class="btn btn-primary mt-3" value="Salva modifiche" />
             </form>
 
-            <br> 
-
-            <h6>Hai già un account? <a href="accedi.php">Accedi</a></h6>
+            <br>
+            <h6>Vuoi uscire? <a href="logout.php">Logout</a></h6>
 
             </div>
         </main>

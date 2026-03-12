@@ -937,30 +937,43 @@
                 const comune_qid = document.getElementById('inputComune').value.trim();
                 const coordinate = document.getElementById('inputCoordinate').value.trim();
 
+                // Logga i dati raccolti
+                console.log('[DEBUG] Dati raccolti per invio:', {
+                    titolo,
+                    descrizione,
+                    comune_qid,
+                    coordinate
+                });
+
                 // Disabilita il bottone durante l'invio
                 const btnInvia = document.getElementById('btnInviaForm');
                 btnInvia.disabled = true;
                 btnInvia.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Invio in corso...';
 
                 try {
+
+                    // Prepara il payload
+                    const payload = {
+                        titolo: titolo,
+                        descrizione: descrizione,
+                        comune_qid: comune_qid,
+                        coordinate: coordinate
+                    };
+                    console.log('[DEBUG] Payload inviato:', JSON.stringify(payload));
+
                     // Chiama il proxy PHP server-side (sicuro, token non esposto)
                     const response = await fetch('api_proxy.php?action=crea_segnalazione', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({
-                            titolo: titolo,
-                            descrizione: descrizione,
-                            comune_qid: comune_qid,
-                            coordinate: coordinate
-                        })
+                        body: JSON.stringify(payload)
                     });
 
                     // Leggi il response come testo prima
                     const responseText = await response.text();
-                    console.log('Response Status:', response.status);
-                    console.log('Response Text:', responseText);
+                    console.log('[DEBUG] Response Status:', response.status);
+                    console.log('[DEBUG] Response Text:', responseText);
 
                     // Prova a parsare il JSON
                     let data;
