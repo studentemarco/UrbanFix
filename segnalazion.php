@@ -307,8 +307,8 @@
                 if (!map) {
                     map = L.map('mapSegnalazione').setView([45.4642, 9.19], 8);
                     
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '© OpenStreetMap contributors',
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
                         maxZoom: 19
                     }).addTo(map);
 
@@ -423,78 +423,9 @@
                 document.getElementById('inputCoordinate').value = '';
 
                 try {
-                    // Query Overpass per ottenere i confini del comune tramite il QID di Wikidata
-                    const query = `
-                        [out:json];
-                        rel["wikidata"="${qid}"]["boundary"="administrative"];
-                        out geom;
-                    `;
-
-                    const response = await fetch('https://overpass-api.de/api/interpreter', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        },
-                        body: 'data=' + encodeURIComponent(query)
-                    });
-
-                    const data = await response.json();
-                    
-                    if (data.elements && data.elements.length > 0) {
-                        const element = data.elements[0];
-                        
-                        // Estrai la geometria del comune unendo tutti i segmenti "outer"
-                        let allCoords = [];
-                        let bounds = {minLat: Infinity, maxLat: -Infinity, minLon: Infinity, maxLon: -Infinity};
-                        
-                        if (element.members) {
-                            element.members.forEach(member => {
-                                if (member.role === 'outer' && member.geometry) {
-                                    member.geometry.forEach(point => {
-                                        bounds.minLat = Math.min(bounds.minLat, point.lat);
-                                        bounds.maxLat = Math.max(bounds.maxLat, point.lat);
-                                        bounds.minLon = Math.min(bounds.minLon, point.lon);
-                                        bounds.maxLon = Math.max(bounds.maxLon, point.lon);
-                                        allCoords.push([point.lat, point.lon]);
-                                    });
-                                }
-                            });
-                        }
-
-                        if (allCoords.length > 0) {
-                            // Salva la geometria come un singolo poligono
-                            currentComuneGeometry = {
-                                type: 'Polygon',
-                                coordinates: [allCoords]
-                            };
-                            
-                            // Disegna il poligono del comune
-                            comunePolygon = L.polygon(allCoords, {
-                                color: '#3388ff',
-                                weight: 3,
-                                fillOpacity: 0.1
-                            }).addTo(map);
-
-                            // Centra la mappa sul comune
-                            const leafletBounds = [
-                                [bounds.minLat, bounds.minLon],
-                                [bounds.maxLat, bounds.maxLon]
-                            ];
-                            //map.fitBounds(leafletBounds);
-                            
-                            // Cache i bounds
-                            comuniBounds[qid] = leafletBounds;
-                        } else {
-                            console.warn('Nessuna geometria trovata per il comune');
-                            searchComuneNominatim(nomeComune);
-                        }
-                    } else {
-                        // Fallback: cerca su Nominatim
-                        searchComuneNominatim(nomeComune);
-                    }
+                    await searchComuneNominatim(nomeComune);
                 } catch (error) {
                     console.error('Errore nel recupero dei confini:', error);
-                    searchComuneNominatim(nomeComune);
                 }
             });
 
@@ -517,47 +448,37 @@
                         const geojson = result.geojson;
                         
                         if (geojson && geojson.coordinates) {
-                            // Converti la geometria GeoJSON in formato Leaflet
-                            let polygonCoords = [];
-                            
+                            // Salva la geometria per il controllo del punto
                             if (geojson.type === 'Polygon') {
-                                // GeoJSON usa [lon, lat], Leaflet usa [lat, lon]
-                                polygonCoords.push(geojson.coordinates[0].map(coord => [coord[1], coord[0]]));
                                 currentComuneGeometry = {
                                     type: 'Polygon',
-                                    coordinates: [geojson.coordinates[0]]
+                                    // isPointInPolygon si aspetta le coordinate con ordine invertito se provengono direttamente da API, 
+                                    // ma siccome è GeoJSON (che usa lon,lat) serve mapparle a lat,lon prima per il controllo in 'isPointInPolygon'
+                                    // O meglio, assicuriamoci che le coordinate che diamo al check custom siano compatibili.
+                                    coordinates: [geojson.coordinates[0].map(coord => [coord[1], coord[0]])]
                                 };
                             } else if (geojson.type === 'MultiPolygon') {
+                                let mappedPolygons = [];
                                 geojson.coordinates.forEach(polygon => {
-                                    polygonCoords.push(polygon[0].map(coord => [coord[1], coord[0]]));
+                                    mappedPolygons.push(polygon[0].map(coord => [coord[1], coord[0]]));
                                 });
                                 currentComuneGeometry = {
                                     type: 'MultiPolygon',
-                                    coordinates: geojson.coordinates
+                                    coordinates: mappedPolygons.map(p => [p])
                                 };
                             }
 
-                            if (polygonCoords.length > 0) {
-                                // Disegna il poligono del comune
-                                if (polygonCoords.length === 1) {
-                                    comunePolygon = L.polygon(polygonCoords[0], {
-                                        color: '#3388ff',
-                                        weight: 3,
-                                        fillOpacity: 0.1
-                                    }).addTo(map);
-                                } else {
-                                    // Per più poligoni, crea un layer group
-                                    comunePolygon = L.layerGroup();
-                                    polygonCoords.forEach(coords => {
-                                        L.polygon(coords, {
-                                            color: '#3388ff',
-                                            weight: 3,
-                                            fillOpacity: 0.1
-                                        }).addTo(comunePolygon);
-                                    });
-                                    comunePolygon.addTo(map);
+                            // Disegna nativamente il poligono dal GeoJSON usando Leaflet
+                            comunePolygon = L.geoJSON(geojson, {
+                                style: {
+                                    color: '#3388ff',
+                                    weight: 3,
+                                    fillOpacity: 0.1
                                 }
-                            }
+                            }).addTo(map);
+
+                            // Centriamo la mappa in base al poligono GeoJSON calcolato
+                            map.fitBounds(comunePolygon.getBounds());
                         }
                         
                         if (bounds) {

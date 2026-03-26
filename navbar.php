@@ -1,4 +1,6 @@
 <?php
+require_once 'config.php'; 
+
 // Determine base URL dynamically (supports both "/progetto/UrbanFix" and "/UrbanFix")
 $script = $_SERVER['SCRIPT_NAME'] ?? ($_SERVER['REQUEST_URI'] ?? '/');
 $baseUrl = '';
@@ -44,8 +46,8 @@ $baseUrl = rtrim($baseUrl, '/');
 
                 <div class="ms-auto d-flex align-items-center">
                     <?php if (!$is_logged): ?>
-                        <a href="account/accedi.php" class="btn btn-outline-primary btn-sm me-2">Login</a>
-                        <a href="account/registrazione.php" class="btn btn-primary btn-sm">Registrati</a>
+                        <a href="<?php echo $baseUrl; ?>/account/accedi.php" class="btn btn-outline-primary btn-sm me-2">Login</a>
+                        <a href="<?php echo $baseUrl; ?>/account/registrazione.php" class="btn btn-primary btn-sm">Registrati</a>
                     <?php else:
                         $displayName = htmlspecialchars($_SESSION['name'] ?? $_SESSION['surname'] ?? $_SESSION['email'] ?? 'Utente', ENT_QUOTES, 'UTF-8');
                     ?>
@@ -59,10 +61,10 @@ $baseUrl = rtrim($baseUrl, '/');
                             <span><?php echo $displayName; ?></span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                            <li><a class="dropdown-item" href="account/account.php">Modifica account</a></li>
+                            <li><a class="dropdown-item" href="<?php echo $baseUrl; ?>/account/account.php">Modifica account</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
-                            <form action="account/logout.php" method="post" class="m-0">
+                            <form action="<?php echo $baseUrl; ?>/account/logout.php" method="post" class="m-0">
                                 <button type="submit" class="dropdown-item">Logout</button>
                             </form>
                             </li>

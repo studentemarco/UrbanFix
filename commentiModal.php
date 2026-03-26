@@ -99,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['testo'])) {
     $autore = $_SESSION['nome_utente'] ?? 'Anonimo';
     $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
     if (!$conn->connect_error) {
-        $stmt = $conn->prepare("INSERT INTO commenti (problema_id, autore, testo, data_invio) VALUES (?, ?, ?, NOW())");
+        $stmt = $conn->prepare("INSERT INTO UrbanFix_Commenti (problema_id, autore, testo, data_invio) VALUES (?, ?, ?, NOW())");
         $stmt->bind_param('iss', $problema_id, $autore, $testo);
         $stmt->execute();
         $stmt->close();

@@ -406,8 +406,8 @@
                 if (!map) {
                     map = L.map('mapSegnalazione').setView([45.4642, 9.19], 8);
                     
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '© OpenStreetMap contributors',
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
                         maxZoom: 19
                     }).addTo(map);
 
@@ -546,126 +546,9 @@
                 document.getElementById('inputCoordinate').value = '';
 
                 try {
-                    // Query Overpass per ottenere i confini del comune tramite il QID di Wikidata
-                    // Prova con vari admin_level (8, 6, 4) per gestire diversi tipi di comuni
-                    const query = `
-                        [out:json][timeout:25];
-                        (
-                          rel["wikidata"="${qid}"]["boundary"="administrative"]["admin_level"~"^(4|6|8)$"];
-                        );
-                        out geom;
-                    `;
-
-                    console.log('Cercando confini per:', nomeComune, qid);
-
-                    const response = await fetch('https://overpass-api.de/api/interpreter', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        },
-                        body: 'data=' + encodeURIComponent(query)
-                    });
-
-                    const data = await response.json();
-                    console.log('Dati Overpass ricevuti:', data);
-                    
-                    if (data.elements && data.elements.length > 0) {
-                        // Ordina per admin_level (preferisci 8, poi 6, poi 4)
-                        const sortedElements = data.elements.sort((a, b) => {
-                            const levelA = parseInt(a.tags?.admin_level || 99);
-                            const levelB = parseInt(b.tags?.admin_level || 99);
-                            return Math.abs(levelA - 8) - Math.abs(levelB - 8);
-                        });
-                        
-                        const element = sortedElements[0];
-                        console.log('Elemento selezionato:', element.tags?.name, 'admin_level:', element.tags?.admin_level);
-                        
-                        // Estrai la geometria del comune unendo tutti i segmenti "outer"
-                        let allCoords = [];
-                        let bounds = {minLat: Infinity, maxLat: -Infinity, minLon: Infinity, maxLon: -Infinity};
-                        
-                        if (element.members) {
-                            element.members.forEach(member => {
-                                if ((member.role === 'outer' || member.role === '') && member.geometry) {
-                                    member.geometry.forEach(point => {
-                                        bounds.minLat = Math.min(bounds.minLat, point.lat);
-                                        bounds.maxLat = Math.max(bounds.maxLat, point.lat);
-                                        bounds.minLon = Math.min(bounds.minLon, point.lon);
-                                        bounds.maxLon = Math.max(bounds.maxLon, point.lon);
-                                        allCoords.push([point.lat, point.lon]);
-                                    });
-                                }
-                            });
-                        }
-
-                        console.log('Coordinate estratte:', allCoords.length);
-
-                        if (allCoords.length > 0) {
-                            // Assicurati che il poligono sia chiuso (primo e ultimo punto coincidono)
-                            const first = allCoords[0];
-                            const last = allCoords[allCoords.length - 1];
-                            if (first[0] !== last[0] || first[1] !== last[1]) {
-                                allCoords.push([first[0], first[1]]);
-                                console.log('Poligono chiuso automaticamente');
-                            }
-                            
-                            // Salva la geometria come array di poligoni (anche se è solo uno)
-                            currentComuneGeometry = {
-                                type: 'MultiPolygon',
-                                coordinates: [allCoords]
-                            };
-                            
-                            console.log('Geometria salvata per il controllo, punti totali:', allCoords.length);
-                            
-                            // Disegna il poligono del comune
-                            comunePolygon = L.polygon(allCoords, {
-                                color: '#3388ff',
-                                weight: 3,
-                                fillOpacity: 0.1
-                            }).addTo(map);
-
-                            // Crea un overlay grigio che copre tutto tranne il comune
-                            const worldBounds = [
-                                [-90, -180],
-                                [-90, 180],
-                                [90, 180],
-                                [90, -180],
-                                [-90, -180]
-                            ];
-
-                            // Crea il layer grigio con il "buco" per il comune
-                            const overlayCoords = [worldBounds, allCoords];
-                            
-                            overlayLayer = L.polygon(overlayCoords, {
-                                color: 'transparent',
-                                fillColor: '#000000',
-                                fillOpacity: 0.3,
-                                interactive: false
-                            }).addTo(map);
-
-                            // Centra la mappa sul comune
-                            const leafletBounds = [
-                                [bounds.minLat, bounds.minLon],
-                                [bounds.maxLat, bounds.maxLon]
-                            ];
-                            map.fitBounds(leafletBounds);
-                            
-                            // Cache i bounds
-                            comuniBounds[qid] = leafletBounds;
-                            
-                            showAlert(`Confini di ${nomeComune} caricati correttamente`, 'success');
-                        } else {
-                            console.warn('Nessuna geometria trovata per il comune con Overpass');
-                            await searchComuneNominatim(nomeComune);
-                        }
-                    } else {
-                        console.warn('Nessun elemento trovato con Overpass');
-                        // Fallback: cerca su Nominatim
-                        await searchComuneNominatim(nomeComune);
-                    }
+                    await searchComuneNominatim(nomeComune);
                 } catch (error) {
                     console.error('Errore nel recupero dei confini:', error);
-                    await searchComuneNominatim(nomeComune);
                 } finally {
                     // Nascondi l'overlay di caricamento
                     setMapLoading(false);
@@ -696,207 +579,59 @@
                         console.log('GeoJSON type:', geojson?.type, 'Coordinates:', geojson?.coordinates?.length);
                         
                         if (geojson && geojson.coordinates && geojson.coordinates.length > 0) {
-                            let polygonCoords = [];
-                            let geoJsonCoordsForStorage = [];
-                            
                             if (geojson.type === 'Polygon') {
-                                // GeoJSON usa [lon, lat], Leaflet usa [lat, lon]
-                                polygonCoords = geojson.coordinates[0].map(coord => [coord[1], coord[0]]);
-                                // Assicurati che il poligono sia chiuso
-                                if (polygonCoords.length > 0) {
-                                    const first = polygonCoords[0];
-                                    const last = polygonCoords[polygonCoords.length - 1];
-                                    if (first[0] !== last[0] || first[1] !== last[1]) {
-                                        polygonCoords.push([first[0], first[1]]);
-                                    }
-                                }
-                                
-                                geoJsonCoordsForStorage = polygonCoords;
-                                // Salva come array di poligoni per uniformità
+                                let coordsForStorage = geojson.coordinates[0].map(coord => [coord[1], coord[0]]);
                                 currentComuneGeometry = {
                                     type: 'MultiPolygon',
-                                    coordinates: [geoJsonCoordsForStorage]
+                                    coordinates: [coordsForStorage]
                                 };
-                                
-                                console.log('Geometria Polygon salvata da Nominatim:', polygonCoords.length, 'punti');
                             } else if (geojson.type === 'MultiPolygon') {
-                                // Per MultiPolygon (come Roma), gestiamo TUTTI i poligoni
                                 let allPolygons = [];
-                                let totalPoints = 0;
-                                
                                 geojson.coordinates.forEach(polygon => {
                                     if (polygon[0] && polygon[0].length > 0) {
-                                        // Converti coordinate [lon,lat] -> [lat,lon]
-                                        let polygonCoords = polygon[0].map(coord => [coord[1], coord[0]]);
-                                        
-                                        // Assicurati che il poligono sia chiuso
-                                        const first = polygonCoords[0];
-                                        const last = polygonCoords[polygonCoords.length - 1];
-                                        if (first[0] !== last[0] || first[1] !== last[1]) {
-                                            polygonCoords.push([first[0], first[1]]);
-                                        }
-                                        
-                                        allPolygons.push(polygonCoords);
-                                        totalPoints += polygonCoords.length;
-                                        
-                                        // Aggiungi anche alla mappa Leaflet
-                                        polygonCoords.forEach(coord => {
-                                            if (!polygonCoords.includes(coord)) {
-                                                polygonCoords.push(coord);
-                                            }
-                                        });
+                                        let coordsForStorage = polygon[0].map(coord => [coord[1], coord[0]]);
+                                        allPolygons.push(coordsForStorage);
                                     }
                                 });
-                                
-                                if (allPolygons.length > 0) {
-                                    // Salva TUTTI i poligoni per la validazione
-                                    currentComuneGeometry = {
-                                        type: 'MultiPolygon',
-                                        coordinates: allPolygons
-                                    };
-                                    
-                                    // Per Leaflet, usa il primo (principale) per il rendering
-                                    polygonCoords = allPolygons[0];
-                                    
-                                    console.log('Geometria MultiPolygon salvata da Nominatim:', allPolygons.length, 'poligoni con', totalPoints, 'punti totali');
-                                } else {
-                                    console.error('MultiPolygon vuoto da Nominatim');
-                                    showAlert(`Geometria non valida per ${nomeComune}. Seleziona un altro comune.`, 'danger');
-                                    return;
-                                }
-                            } else {
-                                console.error('Tipo geometria non supportato:', geojson.type);
-                                console.log('Tentativo recupero tramite nome su Overpass...');
-                                
-                                // Se Nominatim restituisce solo un Point, prova con Overpass usando il nome
-                                const overpassQuery = `
-                                    [out:json][timeout:30];
-                                    (
-                                      rel["name"="${nomeComune}"]["boundary"="administrative"]["admin_level"~"^(4|6|8)$"];
-                                    );
-                                    out geom;
-                                `;
-                                
-                                try {
-                                    const overpassResponse = await fetch('https://overpass-api.de/api/interpreter', {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/x-www-form-urlencoded'
-                                        },
-                                        body: 'data=' + encodeURIComponent(overpassQuery)
-                                    });
-                                    
-                                    const overpassData = await overpassResponse.json();
-                                    console.log('Dati Overpass (ricerca per nome) ricevuti:', overpassData);
-                                    
-                                    if (overpassData.elements && overpassData.elements.length > 0) {
-                                        // Ordina per admin_level
-                                        const sortedElements = overpassData.elements.sort((a, b) => {
-                                            const levelA = parseInt(a.tags?.admin_level || 99);
-                                            const levelB = parseInt(b.tags?.admin_level || 99);
-                                            return Math.abs(levelA - 8) - Math.abs(levelB - 8);
-                                        });
-                                        
-                                        const element = sortedElements[0];
-                                        console.log('Elemento Overpass trovato:', element.tags?.name, 'admin_level:', element.tags?.admin_level);
-                                        
-                                        let allCoords = [];
-                                        if (element.members) {
-                                            element.members.forEach(member => {
-                                                if ((member.role === 'outer' || member.role === '') && member.geometry) {
-                                                    member.geometry.forEach(point => {
-                                                        allCoords.push([point.lat, point.lon]);
-                                                    });
-                                                }
-                                            });
-                                        }
-                                        
-                                        if (allCoords.length > 0) {
-                                            // Chiudi il poligono
-                                            const first = allCoords[0];
-                                            const last = allCoords[allCoords.length - 1];
-                                            if (first[0] !== last[0] || first[1] !== last[1]) {
-                                                allCoords.push([first[0], first[1]]);
-                                            }
-                                            
-                                            // Salva come array di poligoni per uniformità
-                                            currentComuneGeometry = {
-                                                type: 'MultiPolygon',
-                                                coordinates: [allCoords]
-                                            };
-                                            
-                                            console.log('Geometria Polygon salvata da Overpass (nome):', allCoords.length, 'punti');
-                                            
-                                            // Disegna il poligono
-                                            comunePolygon = L.polygon(allCoords, {
-                                                color: '#3388ff',
-                                                weight: 3,
-                                                fillOpacity: 0.1
-                                            }).addTo(map);
-                                            
-                                            // Overlay grigio
-                                            const worldBounds = [
-                                                [-90, -180],
-                                                [-90, 180],
-                                                [90, 180],
-                                                [90, -180],
-                                                [-90, -180]
-                                            ];
-                                            
-                                            overlayLayer = L.polygon([worldBounds, allCoords], {
-                                                color: 'transparent',
-                                                fillColor: '#000000',
-                                                fillOpacity: 0.3,
-                                                interactive: false
-                                            }).addTo(map);
-                                            
-                                            // Centra la mappa
-                                            map.fitBounds(allCoords);
-                                            
-                                            showAlert(`Confini di ${nomeComune} caricati correttamente`, 'success');
-                                            return;
-                                        }
-                                    }
-                                } catch (overpassError) {
-                                    console.error('Errore nel tentativo Overpass per nome:', overpassError);
-                                }
-                                
-                                // Se arriviamo qui, nessun metodo ha funzionato
-                                showAlert(`Geometria non disponibile per ${nomeComune}. Impossibile caricare i confini completi. Prova con un altro comune o contatta il supporto.`, 'danger');
-                                return;
+                                currentComuneGeometry = {
+                                    type: 'MultiPolygon',
+                                    coordinates: allPolygons
+                                };
                             }
 
-                            if (polygonCoords.length > 0) {
-                                // Disegna il poligono del comune
-                                comunePolygon = L.polygon(polygonCoords, {
+                            // Use Native Leaflet GeoJSON to render perfectly without auto-intersections
+                            comunePolygon = L.geoJSON(geojson, {
+                                style: {
                                     color: '#3388ff',
                                     weight: 3,
-                                    fillOpacity: 0.1
-                                }).addTo(map);
+                                    fillOpacity: 0
+                                }
+                            }).addTo(map);
 
-                                // Crea l'overlay grigio
-                                const worldBounds = [
-                                    [-90, -180],
-                                    [-90, 180],
-                                    [90, 180],
-                                    [90, -180],
-                                    [-90, -180]
-                                ];
-
-                                const overlayCoords = [worldBounds, polygonCoords];
-                                
-                                overlayLayer = L.polygon(overlayCoords, {
-                                    color: 'transparent',
-                                    fillColor: '#000000',
-                                    fillOpacity: 0.3,
-                                    interactive: false
-                                }).addTo(map);
-                                
-                                showAlert(`Confini di ${nomeComune} caricati (Nominatim)`, 'info');
-                            } else {
-                                console.error('Nessuna coordinata estratta da Nominatim');
-                                showAlert(`Impossibile caricare i confini di ${nomeComune}. Seleziona un altro comune.`, 'danger');
+                            // Grey world overlay with holes for our polygons
+                            const worldBounds = [
+                                [-90, -180],
+                                [-90, 180],
+                                [90, 180],
+                                [90, -180],
+                                [-90, -180]
+                            ];
+                            
+                            let overlayCoords = [worldBounds];
+                            if (currentComuneGeometry && currentComuneGeometry.coordinates) {
+                                currentComuneGeometry.coordinates.forEach(polyCoords => {
+                                    overlayCoords.push(polyCoords);
+                                });
                             }
+
+                            overlayLayer = L.polygon(overlayCoords, {
+                                color: 'transparent',
+                                fillColor: '#000000',
+                                fillOpacity: 0.3,
+                                interactive: false
+                            }).addTo(map);
+                            
+                            showAlert(`Confini di ${nomeComune} caricati`, 'success');
                         } else {
                             console.error('Nessuna geometria GeoJSON da Nominatim o coordinates vuoto');
                             showAlert(`Confini non disponibili per ${nomeComune}. Seleziona un altro comune.`, 'danger');

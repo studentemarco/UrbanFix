@@ -30,7 +30,7 @@
 
     <body>
         <header>
-            <?php $current_page = 'account'; include '../navbar.php'; ?>
+            <?php $current_page = ''; include '../navbar.php'; ?>
         </header>
         <main class="container" style="margin-top: 50px;">
             <div class="container mt-5">
@@ -58,7 +58,7 @@
             </form>
 
             <br>
-            <h6>Vuoi uscire? <a href="logout.php">Logout</a></h6>
+            <!-- <h6>Vuoi uscire? <a href="logout.php">Logout</a></h6> -->
 
             </div>
         </main>
