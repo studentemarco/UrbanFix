@@ -96,17 +96,28 @@ if (!is_array($commenti) || empty($commenti['data']) || !is_array($commenti['dat
 // Gestione invio commento (POST)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['testo'])) {
     $testo = trim($_POST['testo']);
-    $autore = $_SESSION['nome_utente'] ?? 'Anonimo';
-    $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-    if (!$conn->connect_error) {
-        $stmt = $conn->prepare("INSERT INTO UrbanFix_Commenti (problema_id, autore, testo, data_invio) VALUES (?, ?, ?, NOW())");
-        $stmt->bind_param('iss', $problema_id, $autore, $testo);
-        $stmt->execute();
-        $stmt->close();
-        $conn->close();
-        // Redirect per evitare doppio invio
-        header('Location: commentiModal.php?problema_id=' . $problema_id);
-        exit;
-    }
+    
+    // Invia il commento all'API
+    $payload = json_encode(['testo' => $testo]);
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => [
+                "Content-Type: application/json",
+                "Authorization: Bearer " . ($_SESSION['token'] ?? '')
+            ],
+            'content' => $payload
+        ]
+    ]);
+    $response = file_get_contents(
+        API_URL . "problemi/".$problema_id."/commenti",
+        false,
+        $context
+    );
+
+    // Redirect per evitare doppio invio
+    header('Location: commentiModal.php?problema_id=' . $problema_id);
+    exit;
+    
 }
 ?>

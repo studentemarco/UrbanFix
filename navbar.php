@@ -23,6 +23,14 @@ if ($pos !== false) {
 
 $baseUrl = rtrim($baseUrl, '/');
 ?>
+<script>
+    // Configuration exposed to frontend scripts
+    window.AppConfig = {
+        baseUrl: "<?php echo $baseUrl; ?>",
+        mapTileBase: "<?php echo MAP_TILE_BASE; ?>",
+        mapTileOverlays: <?php echo json_encode(MAP_TILE_OVERLAYS); ?>
+    };
+</script>
 <nav class="navbar navbar-expand-lg navbar-light border-bottom fixed-top" style="background-color: #f9f7f3;" id="mainNavbar">
     <div class="container-fluid">
         <a class="navbar-brand" href="<?php echo $baseUrl; ?>/index.php">UrbanFix</a>
