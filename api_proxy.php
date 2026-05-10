@@ -88,6 +88,50 @@ if ($method === 'POST' && $action === 'crea_segnalazione') {
     exit;
 }
 
+if ($method === 'GET' && $action === 'get_commenti') {
+    $problema_id = (int)($_GET['id'] ?? 0);
+    if ($problema_id <= 0) {
+        http_response_code(400); echo json_encode(['error' => 'ID problema non valido']); exit;
+    }
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'header' => [
+                'Content-Type: application/json',
+                'Authorization: Bearer ' . $token
+            ],
+            'ignore_errors' => true
+        ]
+    ]);
+    $response = file_get_contents(API_URL . 'problemi/' . $problema_id . '/commenti', false, $context);
+    echo $response;
+    exit;
+}
+
+if ($method === 'POST' && $action === 'crea_commento') {
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!isset($input['problema_id'], $input['testo'])) {
+        http_response_code(400); echo json_encode(['error' => 'Dati mancanti']); exit;
+    }
+    $problema_id = (int)$input['problema_id'];
+    $body = json_encode(['testo' => $input['testo']]);
+
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => [
+                'Content-Type: application/json',
+                'Authorization: Bearer ' . $token
+            ],
+            'content' => $body,
+            'ignore_errors' => true
+        ]
+    ]);
+    $response = file_get_contents(API_URL . 'problemi/' . $problema_id . '/commenti', false, $context);
+    echo $response;
+    exit;
+}
+
 // Endpoint non valido
 http_response_code(404);
 echo json_encode(['error' => 'Endpoint non trovato']);

@@ -31,6 +31,11 @@ $baseUrl = rtrim($baseUrl, '/');
         mapTileOverlays: <?php echo json_encode(MAP_TILE_OVERLAYS); ?>
     };
 </script>
+<style>
+    body {
+        background-color: #f9f7f3 !important;
+    }
+</style>
 <nav class="navbar navbar-expand-lg navbar-light border-bottom fixed-top" style="background-color: #f9f7f3;" id="mainNavbar">
     <div class="container-fluid">
         <a class="navbar-brand" href="<?php echo $baseUrl; ?>/index.php">UrbanFix</a>
@@ -46,6 +51,9 @@ $baseUrl = rtrim($baseUrl, '/');
             <a class="nav-link <?php if ($current_page == 'index') echo 'active'; ?>" href="<?php echo $baseUrl; ?>/index.php">Home</a>
             <?php if ($is_logged) : ?> 
                 <a class="nav-link <?php if ($current_page == 'segnalazioni') echo 'active'; ?>" href="<?php echo $baseUrl; ?>/segnalazioni.php">Segnalazioni</a>
+                <?php if (isset($_SESSION['is_dipendente']) && $_SESSION['is_dipendente']) : ?>
+                    <a class="nav-link <?php if ($current_page == 'admin_comune') echo 'active'; ?>" href="<?php echo $baseUrl; ?>/admin_comune.php">Gestione Comune</a>
+                <?php endif; ?>
             <?php endif; ?>
             </div>
 

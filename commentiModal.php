@@ -73,26 +73,6 @@ if ($problema_id <= 0) {
 ?>
 </div>
 <?php
-if (!is_array($commenti) || empty($commenti['data']) || !is_array($commenti['data'])) {
-    echo '<div class="text-muted">Nessun commento.</div>';
-} else {
-    foreach ($commenti['data'] as $c) {
-        if (is_array($c)) {
-            echo '<div style="margin-bottom:8px; padding:8px; border-bottom:1px solid #eee;">';
-            echo '<strong>' . htmlspecialchars($c['Utenti_email']) . '</strong><br>';
-            echo '<span>' . htmlspecialchars($c['descrizione']) . '</span><br>';
-            echo '<span class="text-muted" style="font-size:0.9em;">' . htmlspecialchars($c['time']) . '</span>';
-            echo '</div>';
-        }
-    }
-}
-?>
-</div>
-<form method="post" action="commentiModal.php?problema_id=<?= $problema_id ?>" class="input-group">
-    <input type="text" name="testo" class="form-control" placeholder="Scrivi un commento..." required>
-    <button class="btn btn-primary" type="submit">Invia</button>
-</form>
-<?php
 // Gestione invio commento (POST)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['testo'])) {
     $testo = trim($_POST['testo']);
@@ -118,6 +98,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['testo'])) {
     // Redirect per evitare doppio invio
     header('Location: commentiModal.php?problema_id=' . $problema_id);
     exit;
-    
+}
+
+if (!empty($commenti) && isset($commenti['data']) && is_array($commenti['data']) && count($commenti['data']) > 0) {
+    foreach ($commenti['data'] as $c) {
+        if (is_array($c)) {
+            echo '<div style="margin-bottom:8px; padding:8px; border-bottom:1px solid #eee;">';
+            echo '<strong>' . htmlspecialchars($c['Utenti_email']) . '</strong> ';
+            echo '<span class="text-muted" style="font-size:0.8em;">' . date('d/m/Y H:i', strtotime($c['time'])) . '</span><br>';
+            echo '<span>' . htmlspecialchars($c['descrizione']) . '</span>';
+            echo '</div>';
+        }
+    }
+} else {
+    echo '<div class="text-muted p-2">Nessun commento.</div>';
 }
 ?>
+</div>
+<form method="post" action="commentiModal.php?problema_id=<?= $problema_id ?>" class="input-group mt-3">
+    <input type="text" name="testo" class="form-control" placeholder="Scrivi un commento..." required>
+    <button class="btn btn-primary" type="submit">Invia</button>
+</form>

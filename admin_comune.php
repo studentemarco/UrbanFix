@@ -103,7 +103,7 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error'], $_SESSION['active_ta
 $comune_res = call_api("comuni/" . urlencode($comuni_qid));
 $nome_comune = ($comune_res && isset($comune_res['data']['nome'])) ? $comune_res['data']['nome'] : "Sconosciuto";
 
-$problemi_res = call_api("problemi/comune/" . urlencode($comuni_qid));
+$problemi_res = call_api("problemiAll/comune/" . urlencode($comuni_qid));
 $problemi = ($problemi_res && isset($problemi_res['data'])) ? $problemi_res['data'] : [];
 
 $dipendenti = [];
@@ -145,6 +145,10 @@ if ($is_admin) {
             overflow-y: auto;
             padding-right: 10px;
         }
+        /* body {
+            overflow-y: hidden;
+        } */
+
     </style>
 </head>
 
@@ -185,67 +189,11 @@ if ($is_admin) {
             
             <!-- SCHEDA SEGNALAZIONI (Split View) -->
             <div class="tab-pane fade <?php echo $active_tab === 'segnalazioni' ? 'show active' : ''; ?>" id="segnalazioni" role="tabpanel">
-                <div class="row">
-                    <!-- Colonna di Sinistra: Lista Problemi -->
-                    <div class="col-lg-5 col-xl-4 mb-4">
-                        <div class="problems-list">
-                            <?php if (count($problemi) > 0): ?>
-                                <?php foreach($problemi as $p): ?>
-                                    <div class="card shadow-sm mb-3 problem-card" data-id="<?php echo $p['ID']; ?>" data-lat="<?php echo htmlspecialchars($p['latitudine'] ?? ''); ?>" data-lng="<?php echo htmlspecialchars($p['longitudine'] ?? ''); ?>">
-                                        <div class="card-body">
-                                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                                <h6 class="card-title fw-bold mb-0">#<?php echo $p['ID']; ?> - <?php echo htmlspecialchars($p['titolo']); ?></h6>
-                                                <span class="badge border <?php 
-                                                    echo $p['stato'] == 'aperto' ? 'bg-danger' : 
-                                                        ($p['stato'] == 'in lavorazione' ? 'bg-warning text-dark' : 
-                                                        ($p['stato'] == 'risolto' ? 'bg-success' : 'bg-info text-dark')); ?>">
-                                                    <?php echo strtoupper($p['stato']); ?>
-                                                </span>
-                                            </div>
-                                            <p class="card-text small text-muted mb-2">
-                                                <i class="bi bi-clock"></i> Segnalato: <?php echo date('d/m/Y H:i', strtotime($p['timestampSegnalazione'])); ?><br>
-                                                <?php if(!empty($p['timestampStato'])): ?>
-                                                    <i class="bi bi-arrow-repeat"></i> Aggiornato: <?php echo date('d/m/Y H:i', strtotime($p['timestampStato'])); ?><br>
-                                                <?php endif; ?>
-                                                <i class="bi bi-geo-alt"></i> Vicino a: <span class="addr-nominatim" data-lat="<?php echo htmlspecialchars($p['latitudine'] ?? ''); ?>" data-lng="<?php echo htmlspecialchars($p['longitudine'] ?? ''); ?>">Caricamento...</span><br>
-                                                <i class="bi bi-person"></i> Utente: <?php echo htmlspecialchars($p['nome_utente'] . ' ' . $p['cognome_utente']); ?>
-                                            </p>
-                                            
-                                            <form method="POST" class="form-aggiorna-stato mt-3">
-                                                <input type="hidden" name="action" value="aggiorna_stato">
-                                                <input type="hidden" name="problema_id" value="<?php echo $p['ID']; ?>">
-                                                <div class="input-group input-group-sm">
-                                                    <select name="stato" class="form-select status-select">
-                                                        <option value="aperto" <?php if($p['stato']=='aperto') echo 'selected';?>>Aperto</option>
-                                                        <option value="in lavorazione" <?php if($p['stato']=='in lavorazione') echo 'selected';?>>In Lavorazione</option>
-                                                        <option value="monitoraggio" <?php if($p['stato']=='monitoraggio') echo 'selected';?>>In Monitoraggio</option>
-                                                        <option value="risolto" <?php if($p['stato']=='risolto') echo 'selected';?>>Risolto</option>
-                                                    </select>
-                                                    <button type="button" class="btn btn-outline-primary btn-salva-stato">Aggiorna</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <div class="text-center p-4 text-muted border rounded bg-white">
-                                    Nessuna segnalazione ricevuta.
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                    
-                    <!-- Colonna di Destra: Mappa -->
-                    <div class="col-lg-7 col-xl-8">
-                        <div class="card shadow-sm border-0 h-100">
-                            <div class="card-body p-0">
-                                <div id="adminMap"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <?php 
+                   $nome_comune_per_mappa = $nome_comune;
+                   include "include/problemi_map_list.php"; 
+                ?>
             </div>
-            
             <!-- SCHEDA DIPENDENTI (SOLO SUPERADMIN) -->
             <?php if ($is_admin): ?>
             <div class="tab-pane fade <?php echo $active_tab === 'dipendenti' ? 'show active' : ''; ?>" id="dipendenti" role="tabpanel">
@@ -400,148 +348,6 @@ if ($is_admin) {
             });
         });
 
-        // --- 3. Mappa Leaflet & Hover Interattivo ---
-        let map;
-        let markers = {};
-
-        function initAdminMap() {
-            if (!document.getElementById('adminMap')) return;
-            
-            // Base layer setup as in map.js
-            map = L.map('adminMap').setView([45.4642, 9.19], 8);
-            
-            // Fallback for mapTileBase
-            const tileBase = (window.AppConfig && window.AppConfig.mapTileBase) 
-                ? window.AppConfig.mapTileBase 
-                : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-                
-            L.tileLayer(tileBase, {
-                maxZoom: 19,
-                attribution: '&copy; OpenStreetMap'
-            }).addTo(map);
-
-            if (window.AppConfig && window.AppConfig.mapTileOverlays) {
-                window.AppConfig.mapTileOverlays.forEach(url => {
-                    L.tileLayer(url, { maxZoom: 19, opacity: 0.7 }).addTo(map);
-                });
-            }
-
-            const boundsArr = [];
-            const problems = document.querySelectorAll('.problem-card');
-            
-            // Icone Standard/Hover
-            const defaultIcon = new L.Icon.Default();
-            const hoverIcon = new L.Icon({
-                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                iconSize: [25, 41],
-                iconAnchor: [12, 41],
-                popupAnchor: [1, -34],
-                shadowSize: [41, 41]
-            });
-
-            problems.forEach(card => {
-                const id = card.getAttribute('data-id');
-                const latStr = card.getAttribute('data-lat');
-                const lngStr = card.getAttribute('data-lng');
-                if(latStr && lngStr) {
-                    const lat = parseFloat(latStr);
-                    const lng = parseFloat(lngStr);
-                    if(!isNaN(lat) && !isNaN(lng)) {
-                        boundsArr.push([lat, lng]);
-                        
-                        const m = L.marker([lat, lng], {icon: defaultIcon}).addTo(map);
-                        m.bindPopup("<b>Segnalazione #" + id + "</b><br>Trovata qui.");
-                        markers[id] = m;
-                        
-                        // Event: Click on marker -> Scroll array and visual
-                        m.on('mouseover', function() {
-                            this.openPopup();
-                            document.querySelectorAll('.problem-card').forEach(c => c.classList.remove('active-hover'));
-                            card.classList.add('active-hover');
-                            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        });
-                        m.on('mouseout', function() {
-                            card.classList.remove('active-hover');
-                            this.closePopup();
-                        });
-
-                        // Event: Hover on card -> Highlight marker
-                        card.addEventListener('mouseenter', () => {
-                            m.setIcon(hoverIcon);
-                            m.setZIndexOffset(1000);
-                        });
-                        card.addEventListener('mouseleave', () => {
-                            m.setIcon(defaultIcon);
-                            m.setZIndexOffset(0);
-                        });
-                    }
-                }
-            });
-
-            if(boundsArr.length > 0) {
-                map.fitBounds(boundsArr, { padding: [20, 20] });
-            }
-        }
-
-        // --- 4. Reverse Geocoding Lento con Nominatim ---
-        // Funzione per richiedere via asincrona un array di posizioni (con delay)
-        async function fetchIndirizzi() {
-            const addrSpans = Array.from(document.querySelectorAll('.addr-nominatim'));
-            for(let span of addrSpans) {
-                const lat = span.getAttribute('data-lat');
-                const lng = span.getAttribute('data-lng');
-                if(!lat || !lng || isNaN(lat) || isNaN(lng)) {
-                    span.innerText = "Posizione non valida";
-                    continue;
-                }
-                
-                try {
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
-                        headers: {
-                            'Accept-Language': 'it'
-                        }
-                    });
-                    if(res.ok) {
-                        const data = await res.json();
-                        let via = data.address?.road || data.address?.pedestrian || data.address?.cycleway || data.address?.neighbourhood || data.name || "Indirizzo sconosciuto";
-                        span.innerText = via;
-                    } else {
-                        span.innerText = "Non disponibile";
-                    }
-                } catch(e) {
-                    span.innerText = "Errore di rete";
-                }
-                
-                // Sleep 1200ms per rispettare il limite di Nominatim (1 request/second)
-                await new Promise(r => setTimeout(r, 1200));
-            }
-        }
-
-        // Inizializza tutto
-        if (document.getElementById('segnalazioni').classList.contains('active')) {
-            initAdminMap();
-        } else {
-            // Se la mappa è in un tab non attivo, inizializzala al click sul tab
-            const tabBtn = document.getElementById('segnalazioni-tab');
-            if (tabBtn) {
-                tabBtn.addEventListener('shown.bs.tab', function () {
-                    if (!map) {
-                        initAdminMap();
-                    } else {
-                        map.invalidateSize();
-                    }
-                });
-            }
-        }
-        
-        // Fai partire il geocoding (se ci sono spans da riempire)
-        document.addEventListener('DOMContentLoaded', fetchIndirizzi);
-        // Assicurati che se non l'ha istanziato in automatico perché attivo lo fa per sicurezza
-        if (document.getElementById('segnalazioni-tab') && document.getElementById('segnalazioni-tab').classList.contains('active')) {
-           initAdminMap();
-        }
-
-    </script>
+        </script>
 </body>
 </html>

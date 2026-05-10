@@ -53,6 +53,29 @@ session_start();
     $_SESSION["email"] = $utente["email"] ?? '';
     $_SESSION["token"] = $utente["token"] ?? '';
 
+    // Controlla se è dipendente per il redirect
+    $options = [
+        'http' => [
+            'method' => 'GET',
+            'header' => [
+                "Content-Type: application/json",
+                "Authorization: Bearer " . $_SESSION["token"]
+            ],
+            'ignore_errors' => true
+        ]
+    ];
+    $contextDip = stream_context_create($options);
+    $responseDip = file_get_contents(API_URL . "dipendenti/" . urlencode($_SESSION["email"]), false, $contextDip);
+    $me_res = json_decode($responseDip, true);
+
+    if ($me_res && !isset($me_res['error']) && !empty($me_res['data'])) {
+        $_SESSION['is_dipendente'] = true;
+        $_SESSION['is_admin_comunale'] = (bool)($me_res['data']['isAdminComunale'] ?? false);
+        header("Location: ../admin_comune.php");
+        exit;
+    }
+
+    $_SESSION['is_dipendente'] = false;
     header("Location: ../segnalazioni.php");
     exit;
 

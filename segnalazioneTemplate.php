@@ -92,33 +92,34 @@
                 <?php endif; ?>
             <!-- Banner commenti modale PHP -->
             <div id="commenti-banner-<?php echo $problema['ID']; ?>" class="modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:9999;">
-                <div style="background:#fff; margin:40px auto; max-width:600px; border-radius:8px; box-shadow:0 2px 16px #0003; padding:24px; position:relative;">
-                    <button onclick="chiudiCommentiPHP(<?php echo $problema['ID']; ?>)" style="position:absolute; top:8px; right:8px; border:none; background:none; font-size:1.5em;">&times;</button>
+                <div style="background:#fff; margin:40px auto; max-width:600px; border-radius:8px; box-shadow:0 2px 16px #0003; padding:24px; position:relative;" class="commenti-modal-content">
+                    <button onclick="chiudiCommentiPHP(<?php echo $problema['ID']; ?>)" style="position:absolute; top:8px; right:8px; border:none; background:none; font-size:1.5em; z-index: 10000;">&times;</button>
                     <h4>Commenti segnalazione #<?php echo $problema['ID']; ?></h4>
-                    <div id="elenco-commenti-<?php echo $problema['ID']; ?>">
-                        <!-- Qui verrà caricato il contenuto PHP -->
+                    <div id="elenco-commenti-<?php echo $problema['ID']; ?>" style="max-height: 60vh; overflow-y: auto;">
+                        <div class="text-center my-3"><span class="spinner-border spinner-border-sm"></span> Caricamento...</div>
                     </div>
                 </div>
             </div>
                         <script>
                         function apriCommentiPHP(id) {
                                 const banner = document.getElementById('commenti-banner-' + id);
+                                if (!banner) return;
                                 banner.style.display = 'block';
+                                
                                 // Carica il contenuto commentiModal.php via AJAX
-                                fetch('/progetto/UrbanFix/commentiModal.php?problema_id=' + id)
+                                fetch('commentiModal.php?problema_id=' + id)
                                     .then(r => r.text())
                                     .then(html => {
                                         document.getElementById('elenco-commenti-' + id).innerHTML = html;
+                                    }).catch(e => {
+                                        document.getElementById('elenco-commenti-' + id).innerHTML = '<div class="alert alert-danger">Errore.</div>';
                                     });
-                                // Gestione click fuori dalla modale
-                                setTimeout(() => {
-                                    banner.addEventListener('click', function handler(e) {
-                                        if (e.target === banner) {
-                                            chiudiCommentiPHP(id);
-                                            banner.removeEventListener('click', handler);
-                                        }
-                                    });
-                                }, 100);
+                                
+                                banner.onclick = function(e) {
+                                    if (e.target === banner) {
+                                        chiudiCommentiPHP(id);
+                                    }
+                                };
                         }
                         function chiudiCommentiPHP(id) {
                                 document.getElementById('commenti-banner-' + id).style.display = 'none';
