@@ -38,7 +38,7 @@ $context = stream_context_create([
         'method' => 'POST',
         'header' => [
             "Content-Type: application/json",
-            // "Authorization: Bearer " . ($_SESSION['token'] ?? '')
+            "Authorization: Bearer " . ($_SESSION['token'] ?? '')
         ],
         'content' => json_encode($updateData),
         'ignore_errors' => true

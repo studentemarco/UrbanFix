@@ -42,13 +42,13 @@
 
             <form action="salvaRegistrazione.php" method="post">
                 <label class="form-label">Nome: </label>
-                <input type="text" class="form-control" name="name" placeholder="Inserisci nome" maxlength="100"/>
+                <input type="text" class="form-control" name="name" placeholder="Inserisci nome" maxlength="100" required/>
                 <label class="form-label">Cognome: </label>
-                <input type="text" class="form-control" name="surname" placeholder="Inserisci cognome" maxlength="100"/>
+                <input type="text" class="form-control" name="surname" placeholder="Inserisci cognome" maxlength="100" required/>
                 <label class="form-label">Email: </label>
-                <input type="text" class="form-control" name="email" placeholder="Inserisci email" maxlength="254"/>
+                <input type="email" class="form-control" name="email" placeholder="Inserisci email" maxlength="254" required/>
                 <label class="form-label">Password: </label>
-                <input type="password" class="form-control" name="password" placeholder="Inserisci password" />
+                <input type="password" class="form-control" name="password" placeholder="Inserisci password" required minlength="8"/>
                 <input type="submit" class="btn btn-primary mt-3" value="Registrati" />
             </form>
 
