@@ -90,12 +90,41 @@
     
 
                 <?php
-                    for ($i = 0; $i < 15; $i++) {
+                    for ($i = 0; $i < 10; $i++) {
                         echo "<br>";
                     }
                 ?>
 
                 
+                <div class="card shadow-sm w-100 w-md-75 w-lg-50"> <!-- Banner di presentazione -->
+                    <div class="card-body d-flex flex-column flex-md-row align-items-center gap-3">
+                        <div class="flex-shrink-0 text-primary d-flex align-items-center justify-content-center" style="width:56px;height:56px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                <path d="M15 3h6v6"></path>
+                                <path d="M10 14L21 3"></path>
+                            </svg>
+                        </div>
+
+                        <div class="flex-grow-1 text-center text-md-start">
+                            <h4 class="h5 mb-1">Non sai come utilizzare questo sito?</h4>
+                            <p class="mb-0 text-muted small">Scopri come iniziare a utilizzare il nostro sito e sfruttare tutte le sue funzionalità.</p>
+                        </div>
+
+                        <div class="text-center text-md-end mt-2 mt-md-0">
+                            <a href="<?php echo $baseUrl; ?>/documentazione_utente.html" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+                                Vai alla documentazione utente
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ms-2" aria-hidden="true">
+                                    <path d="M15 3h6v6"></path>
+                                    <path d="M10 14L21 3"></path>
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <br>
                 
                 <div class="card shadow-sm w-100 w-md-75 w-lg-50"> <!-- Banner di presentazione -->
                     <div class="card-body d-flex flex-column flex-md-row align-items-center gap-3">
